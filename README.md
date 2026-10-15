@@ -1,6 +1,12 @@
 # Woso 人物关系图谱
 
-一个可离线打开、编辑和导出的人物关系图谱。页面支持人物与关系编辑、搜索和筛选、拖拽与缩放，以及图片、HTML 和 JSON 导出。
+一个可离线打开、编辑和导出的人物关系图谱。页面支持人物与关系编辑、搜索和筛选、拖拽与缩放，以及图片、HTML 和 JSON 导出。在线版由 GitHub Pages 托管；图谱 JSON 是正式数据源，合并到 `main` 后会自动重新构建和发布。
+
+## 在线贡献
+
+网站访客在浏览器中所做的修改不会直接写入仓库。新手可以[提交资料建议](https://github.com/patri677/onlywosolovers/issues/new?template=data-suggestion.yml)，熟悉 GitHub 的贡献者可以 Fork 本仓库、修改 JSON 并创建 Pull Request。所有贡献都要由仓库管理员审核和合并；请先阅读[贡献指南](CONTRIBUTING.md)。
+
+`main` 应设置为仅仓库所有者 `patri677` 可更新，并要求通过 Pull Request 更新；贡献者通过 Fork 提交 PR，不需要主仓库写权限。不要把账号密码、访问令牌等秘密放进项目文件。
 
 ## 打开与恢复当前数据
 
@@ -12,7 +18,13 @@
 
 ## 项目状态
 
-目前是无需服务器的单文件应用。多人共享与跨设备自动同步尚未实现，后续开发方向见 [项目计划.md](项目计划.md)。
+本项目不使用应用后端或数据库。在线页面是静态网站；访客的本地编辑保存在其自己的浏览器中，不会自动同步。多人共享通过 GitHub Issue / Fork / Pull Request 审核协作。项目后续方向见 [项目计划.md](项目计划.md)。
+
+## 本地构建
+
+需要 Node.js 22 或更高版本。运行 `node build.mjs`，会从 `人物关系图谱-爱心图.json` 校验并生成 `dist/index.html`。GitHub Actions 在 `main` 更新后执行同一构建并发布至 GitHub Pages。
+
+首次启用 Pages 时，在仓库 **Settings → Pages → Build and deployment → Source** 中选择 **GitHub Actions**。
 
 ## 公开内容提醒
 

@@ -1,0 +1,30 @@
+name: 人物/关系资料建议
+description: 不熟悉编辑 JSON？在这里提交新增或更正建议，交由管理员审核。
+title: "[资料建议] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        此表单只提交待审核建议，不会自动更改网站。请附上可公开查看的来源链接；不要填写密码、令牌或私人信息。
+  - type: textarea
+    id: change
+    attributes:
+      label: 想新增或更正什么？
+      description: 请写明人物姓名，以及需要新增/修改的人物信息或关系。
+      placeholder: 例如：为某球员补充现效力俱乐部；补充 A 与 B 的关系。
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: 信息来源
+      description: 粘贴支持此修改的公开链接，并说明来源中的相关内容。
+    validations:
+      required: true
+  - type: textarea
+    id: data-file
+    attributes:
+      label: 可选：附上导出的 JSON 文件
+      description: 若你已在本地修改图谱，请先创建 Issue，再把 JSON 文件拖到该 Issue 的评论框中上传，并在这里说明改了什么。
+    validations:
+      required: false
