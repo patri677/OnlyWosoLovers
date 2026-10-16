@@ -32,6 +32,7 @@
 .legend-all{flex:none;height:26px;padding:3px 7px;font-size:11px;border-radius:12px;background:#10182bc9;border-color:transparent}
 .legend-all[aria-pressed='true']{border-color:#70a7ff}
 #sideToggle:disabled{opacity:.45;cursor:default}
+.profile-edit{display:block;width:100%;min-height:44px;margin-top:16px}
 @media(max-width:900px){.relation-palette{right:6px;max-width:calc(100% - 12px)}.relation-palette .legend{grid-template-rows:repeat(2,32px)}.legend-filter{height:32px;padding:4px 8px;font-size:12px}.legend-all{min-height:32px}}
 .graph-loading .stage-wrap::after{content:'正在读取图谱…';position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);pointer-events:none}
 .side-header{display:flex;align-items:center;justify-content:space-between;gap:12px}.side-header h2{margin:0}.side-close{font-size:20px;line-height:1;padding:5px 10px}
@@ -527,8 +528,16 @@ renderEditor=()=>{
   renderEditorBeforeAutoPanel();
   const current=data.nodes.some(node=>node.id===selected)?selected:null;
   sideToggle.disabled=!current;
-  if(!current||current!==editorPanelSelection)setSideOpen(!!current);
+  if(!current||current!==editorPanelSelection)setSideOpen(false);
   editorPanelSelection=current;
+};
+const openDrawerBeforeEditButton=openDrawer;
+openDrawer=n=>{
+  openDrawerBeforeEditButton(n);
+  if(n.id!==editorPanelSelection)setSideOpen(false);
+  const button=document.createElement('button');button.type='button';button.className='btn primary profile-edit';button.textContent='编辑';
+  button.onclick=()=>{selected=n.id;renderEditor();document.getElementById('drawer').classList.remove('open');setSideOpen(true)};
+  document.getElementById('profile').appendChild(button);
 };
 // 侧栏、窗口或设备方向变化都会改变画布尺寸；SVG 的 viewBox 与节点必须在同一帧更新。
 let canvasGeometryFrame=0;
@@ -573,11 +582,11 @@ function placeRelationshipLabels(){
 const renderBeforeLabelPlacement=render;
 render=()=>{renderBeforeLabelPlacement();placeRelationshipLabels()};
 new ResizeObserver(scheduleCanvasGeometryUpdate).observe(stage);
-setSideOpen(!matchMedia('(max-width:900px)').matches);
+setSideOpen(false);
 sideToggle.onclick=()=>setSideOpen(mainPanel.classList.contains('side-collapsed'));
 sideClose.onclick=()=>setSideOpen(false);
 const previousAddNode=addNode.onclick;
-addNode.onclick=e=>{previousAddNode(e);if(matchMedia('(max-width:900px)').matches)setSideOpen(true)};
+addNode.onclick=e=>{previousAddNode(e);document.getElementById('drawer').classList.remove('open');setSideOpen(true)};
 const snapshotView=document.getElementById('snapshot-data');
 if(snapshotView){try{const savedView=JSON.parse(snapshotView.textContent).view||{};activeFilters=Array.isArray(savedView.filters)?savedView.filters:null;focusId=data.nodes.some(n=>n.id===savedView.focusId)?savedView.focusId:null;searchInput.value=focusId?savedView.search||data.nodes.find(n=>n.id===focusId)?.name||'':''}catch(e){}}
 scheduleCanvasGeometryUpdate();
@@ -832,7 +841,7 @@ scheduleCanvasGeometryUpdate=()=>{
   clearPanPreview();render();positionFilterMenus();
  });
 };
-compactScreen.addEventListener('change',event=>{setSideOpen(!event.matches);measureToolbar();scheduleCanvasGeometryUpdate()});
+compactScreen.addEventListener('change',event=>{if(event.matches)setSideOpen(false);measureToolbar();scheduleCanvasGeometryUpdate()});
 // Track pointer IDs so a second finger cannot overwrite an active single drag.
 const canvasPointers=new Map();let pinch=null,panPointer=null,suppressCanvasClickUntil=0;
 let panPreviewFrame=0,previewCamera=null;

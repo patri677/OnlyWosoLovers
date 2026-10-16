@@ -181,8 +181,16 @@ renderEditor=()=>{
   renderEditorBeforeAutoPanel();
   const current=data.nodes.some(node=>node.id===selected)?selected:null;
   sideToggle.disabled=!current;
-  if(!current||current!==editorPanelSelection)setSideOpen(!!current);
+  if(!current||current!==editorPanelSelection)setSideOpen(false);
   editorPanelSelection=current;
+};
+const openDrawerBeforeEditButton=openDrawer;
+openDrawer=n=>{
+  openDrawerBeforeEditButton(n);
+  if(n.id!==editorPanelSelection)setSideOpen(false);
+  const button=document.createElement('button');button.type='button';button.className='btn primary profile-edit';button.textContent='编辑';
+  button.onclick=()=>{selected=n.id;renderEditor();document.getElementById('drawer').classList.remove('open');setSideOpen(true)};
+  document.getElementById('profile').appendChild(button);
 };
 // 侧栏、窗口或设备方向变化都会改变画布尺寸；SVG 的 viewBox 与节点必须在同一帧更新。
 let canvasGeometryFrame=0;
@@ -227,11 +235,11 @@ function placeRelationshipLabels(){
 const renderBeforeLabelPlacement=render;
 render=()=>{renderBeforeLabelPlacement();placeRelationshipLabels()};
 new ResizeObserver(scheduleCanvasGeometryUpdate).observe(stage);
-setSideOpen(!matchMedia('(max-width:900px)').matches);
+setSideOpen(false);
 sideToggle.onclick=()=>setSideOpen(mainPanel.classList.contains('side-collapsed'));
 sideClose.onclick=()=>setSideOpen(false);
 const previousAddNode=addNode.onclick;
-addNode.onclick=e=>{previousAddNode(e);if(matchMedia('(max-width:900px)').matches)setSideOpen(true)};
+addNode.onclick=e=>{previousAddNode(e);document.getElementById('drawer').classList.remove('open');setSideOpen(true)};
 const snapshotView=document.getElementById('snapshot-data');
 if(snapshotView){try{const savedView=JSON.parse(snapshotView.textContent).view||{};activeFilters=Array.isArray(savedView.filters)?savedView.filters:null;focusId=data.nodes.some(n=>n.id===savedView.focusId)?savedView.focusId:null;searchInput.value=focusId?savedView.search||data.nodes.find(n=>n.id===focusId)?.name||'':''}catch(e){}}
 scheduleCanvasGeometryUpdate();

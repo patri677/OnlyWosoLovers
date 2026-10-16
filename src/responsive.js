@@ -63,7 +63,7 @@ scheduleCanvasGeometryUpdate=()=>{
   clearPanPreview();render();positionFilterMenus();
  });
 };
-compactScreen.addEventListener('change',event=>{setSideOpen(!event.matches);measureToolbar();scheduleCanvasGeometryUpdate()});
+compactScreen.addEventListener('change',event=>{if(event.matches)setSideOpen(false);measureToolbar();scheduleCanvasGeometryUpdate()});
 // Track pointer IDs so a second finger cannot overwrite an active single drag.
 const canvasPointers=new Map();let pinch=null,panPointer=null,suppressCanvasClickUntil=0;
 let panPreviewFrame=0,previewCamera=null;

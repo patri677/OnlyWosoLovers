@@ -39,8 +39,9 @@ const panelContext=vm.createContext({data:{nodes:[{id:'a'},{id:'b'}]},selected:n
 vm.runInContext(layout.slice(layout.indexOf('function setSideOpen('),layout.indexOf('function setSideOpen(')+layout.slice(layout.indexOf('function setSideOpen(')).indexOf('\n};')+3),panelContext);
 panelContext.renderEditor();assert(collapsed,'No selection hides the empty panel');
 const count=scheduled;panelContext.renderEditor();assert.equal(scheduled,count,'Hidden panel must not schedule endless resize renders');
-panelContext.selected='a';panelContext.renderEditor();assert(!collapsed,'Selecting a person opens the editor');
+panelContext.selected='a';panelContext.renderEditor();assert(collapsed,'Selecting a person does not open the editor');
+panelContext.setSideOpen(true);panelContext.renderEditor();assert(!collapsed,'Explicit editing opens the panel and survives renders');
 panelContext.setSideOpen(false);panelContext.renderEditor();assert(collapsed,'Explicit close persists across renders');
-panelContext.selected='b';panelContext.renderEditor();assert(!collapsed,'Selecting another person reopens the editor');
+panelContext.selected='b';panelContext.renderEditor();assert(collapsed,'Selecting another person returns to viewing mode');
 panelContext.data.nodes=[];panelContext.renderEditor();assert(collapsed,'Deleting the selected person hides the editor');
 console.log('Editor panel: selection, close, removal, and stable resize checks passed.');
