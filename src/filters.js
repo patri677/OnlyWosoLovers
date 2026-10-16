@@ -1,6 +1,6 @@
 // 关系标签按具体语义着色；旧数据的 type 即使是“其他”，也会根据 label 正确归类。
 Object.assign(types,{engaged:'现任（订婚）',curQuestion:'现任？',exQuestion:'前任？'});
-Object.assign(colors,{engaged:'#a78bfa',curQuestion:'#f59e0b',exQuestion:'#38bdf8'});
+Object.assign(colors,{engaged:'#f472b6',curQuestion:'#f5f0dc',exQuestion:'#c49170'});
 function relationKeyList(edge){
   return WosoGraph.relationKeys(edge);
 }
@@ -102,7 +102,6 @@ function viewNodeIds(){
 visibleNodesForExport=n=>viewNodeIds().has(n.id);
 const previousStructuredRender=render;
 render=()=>{previousStructuredRender();applyCurrentView();refreshDropdownFilters()};
-renderLegend=()=>{legend.innerHTML=Object.keys(types).map(k=>`<div class="tag"><i class="dot" style="background:${colors[k]||colors.other}"></i>${types[k]}</div>`).join('')};
 // 给人物编辑器增加明确的国家和俱乐部字段；旧资料仍可由“国家/俱乐部”自动解析。
 function enrichPersonEditor(){
   const n=data.nodes.find(x=>x.id===selected),meta=editor.querySelector('#fMeta'),saveButton=editor.querySelector('#saveNode');

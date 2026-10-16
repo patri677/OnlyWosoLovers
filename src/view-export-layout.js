@@ -110,12 +110,9 @@ exportPng.onclick=async()=>{
   pairLines.forEach((line,key)=>{
     const text=pairLabels.get(key).join('&');
     const textWidth=ctx.measureText(text).width;
-    for(const t of [.5,.38,.62,.27,.73,.16,.84]){
-      const x=line.x1+(line.x2-line.x1)*t;
-      const y=line.y1+(line.y2-line.y1)*t-7;
-      const box={left:x-textWidth/2-5,right:x+textWidth/2+5,top:y-15,bottom:y+4};
-      if(!occupied.some(other=>overlaps(box,other))){ctx.fillText(text,x,y);occupied.push(box);break}
-    }
+    const {x,y}=WosoGraph.relationshipLabelPosition(line.x1,line.y1,line.x2,line.y2);
+    const box={left:x-textWidth/2-5,right:x+textWidth/2+5,top:y-15,bottom:y+4};
+    if(!occupied.some(other=>overlaps(box,other))){ctx.fillText(text,x,y);occupied.push(box)}
   });
   const images=await Promise.all(shownNodes.map(n=>loadImageForExport(n.avatar)));
   shownNodes.forEach((n,i)=>{
@@ -132,6 +129,8 @@ exportPng.onclick=async()=>{
 };
 exportHtml.onclick=()=>{
   const copy=document.documentElement.cloneNode(true);
+  copy.classList.add('graph-loading');
+  copy.querySelector('#graphScene')?.removeAttribute('style');
   copy.querySelector('#snapshot-data')?.remove();copy.querySelector('#viewStyles')?.remove();
   copy.querySelectorAll('body > :not(.app):not(script)').forEach(el=>el.remove());
   [...copy.querySelector('.toolbar').children].slice(2).forEach(el=>el.remove());
@@ -150,7 +149,11 @@ const unscaledRenderNodes=renderNodes;
 renderNodes=()=>{
   unscaledRenderNodes();
   const contentScale=Math.min(1,2*scale);
-  nodes.querySelectorAll('.node').forEach(el=>el.style.setProperty('--node-scale',contentScale));
+  nodes.querySelectorAll('.node').forEach(el=>{
+    el.style.setProperty('--node-scale',contentScale);
+    el.setAttribute('draggable','false');
+    const avatar=el.querySelector('.avatar');if(avatar)avatar.draggable=false;
+  });
 };
 const unscaledRenderEdges=renderEdges;
 renderEdges=()=>{
@@ -171,10 +174,20 @@ let sideClose=sideHeader.querySelector('#sideClose');
 if(!sideClose){sideClose=document.createElement('button');sideClose.id='sideClose';sideClose.className='btn side-close';sideClose.type='button';sideClose.setAttribute('aria-label','关闭编辑面板');sideClose.textContent='×';sideHeader.appendChild(sideClose)}
 let sideToggle=document.getElementById('sideToggle');
 if(!sideToggle){sideToggle=document.createElement('button');sideToggle.id='sideToggle';sideToggle.className='btn';sideToggle.type='button';sideToggle.textContent='编辑面板';document.querySelector('.top').insertBefore(sideToggle,document.getElementById('clearBtn'))}
-function setSideOpen(open){mainPanel.classList.toggle('side-collapsed',!open);sideToggle.setAttribute('aria-expanded',String(open));sidePanel.setAttribute('aria-hidden',String(!open));scheduleCanvasGeometryUpdate()}
+function setSideOpen(open){open=!!open&&data.nodes.some(node=>node.id===selected);const changed=mainPanel.classList.contains('side-collapsed')===open;mainPanel.classList.toggle('side-collapsed',!open);sideToggle.setAttribute('aria-expanded',String(open));sidePanel.setAttribute('aria-hidden',String(!open));if(changed)scheduleCanvasGeometryUpdate()}
+const renderEditorBeforeAutoPanel=renderEditor;
+let editorPanelSelection=null;
+renderEditor=()=>{
+  renderEditorBeforeAutoPanel();
+  const current=data.nodes.some(node=>node.id===selected)?selected:null;
+  sideToggle.disabled=!current;
+  if(!current||current!==editorPanelSelection)setSideOpen(!!current);
+  editorPanelSelection=current;
+};
 // 侧栏、窗口或设备方向变化都会改变画布尺寸；SVG 的 viewBox 与节点必须在同一帧更新。
 let canvasGeometryFrame=0;
 function scheduleCanvasGeometryUpdate(){
+  if(!appReady)return;
   if(canvasGeometryFrame)return;
   canvasGeometryFrame=requestAnimationFrame(()=>{
     canvasGeometryFrame=0;
@@ -197,19 +210,13 @@ function placeRelationshipLabels(){
     if(!label||!line||group.style.display==='none'||label.style.display==='none')return;
     const x1=Number(line.getAttribute('x1')),y1=Number(line.getAttribute('y1'));
     const x2=Number(line.getAttribute('x2')),y2=Number(line.getAttribute('y2'));
-    const length=Math.hypot(x2-x1,y2-y1)||1;
-    let placed=false;
-    for(const t of [.5,.38,.62,.27,.73,.16,.84]){
-      // Keep labels on the relationship line. Previously they were shifted
-      // perpendicular to the edge to dodge nodes, which became conspicuous
-      // as zoom changed and made labels appear detached in empty space.
-      label.setAttribute('x',x1+(x2-x1)*t);
-      label.setAttribute('y',y1+(y2-y1)*t-7*Math.min(1,2*scale));
-      const r=label.getBBox();
-      const box={left:r.x-5,right:r.x+r.width+5,top:r.y-4,bottom:r.y+r.height+4};
-      if(!occupied.some(other=>overlaps(box,other))){occupied.push(box);placed=true;break}
-    }
-    if(!placed)label.style.display='none';
+    // Hide crowded text instead of changing its anchor as the camera zooms.
+    const {x,y}=WosoGraph.relationshipLabelPosition(x1,y1,x2,y2,Math.min(1,2*scale));
+    label.setAttribute('x',x);label.setAttribute('y',y);
+    const r=label.getBBox();
+    const box={left:r.x-5,right:r.x+r.width+5,top:r.y-4,bottom:r.y+r.height+4};
+    if(occupied.some(other=>overlaps(box,other)))label.style.display='none';
+    else occupied.push(box);
     if(!group.querySelector('title')){
       const title=document.createElementNS('http://www.w3.org/2000/svg','title');
       title.textContent=label.textContent;
@@ -227,5 +234,4 @@ const previousAddNode=addNode.onclick;
 addNode.onclick=e=>{previousAddNode(e);if(matchMedia('(max-width:900px)').matches)setSideOpen(true)};
 const snapshotView=document.getElementById('snapshot-data');
 if(snapshotView){try{const savedView=JSON.parse(snapshotView.textContent).view||{};activeFilters=Array.isArray(savedView.filters)?savedView.filters:null;focusId=data.nodes.some(n=>n.id===savedView.focusId)?savedView.focusId:null;searchInput.value=focusId?savedView.search||data.nodes.find(n=>n.id===focusId)?.name||'':''}catch(e){}}
-restoreFromStorage();
 scheduleCanvasGeometryUpdate();

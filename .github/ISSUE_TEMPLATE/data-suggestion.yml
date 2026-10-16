@@ -25,6 +25,6 @@ body:
     id: data-file
     attributes:
       label: 可选：附上导出的 JSON 文件
-      description: 若你已在本地修改图谱，请先创建 Issue，再把 JSON 文件拖到该 Issue 的评论框中上传，并在这里说明改了什么。
+      description: 若已在网页中修改，请点击“导出数据”保存 JSON，再创建 Issue 并上传附件；如格式不被接受，可压缩为 ZIP。请说明基于哪个版本、具体修改了什么，附件不会自动覆盖正式数据。
     validations:
       required: false

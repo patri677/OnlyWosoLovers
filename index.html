@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN"><head>
+<html lang="zh-CN" class="graph-loading"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>人物关系图谱</title>
@@ -11,6 +11,29 @@
 .main.side-collapsed .side{display:none}
 .node{transform:translate(-50%,-50%) scale(var(--node-scale,1))}
 .stage,.node{touch-action:none}
+.stage{user-select:none;-webkit-user-select:none}
+.stage{overflow:hidden}
+#graphScene{position:absolute;inset:0;transform-origin:0 0;pointer-events:none}
+#graphScene svg{overflow:visible;pointer-events:auto}
+.stage img,.stage svg{-webkit-user-drag:none}
+#nodes{position:absolute;inset:0;pointer-events:none;transform-origin:0 0}
+#nodes .node{pointer-events:auto}
+.graph-loading .stage,.graph-loading .toolbar{visibility:hidden;pointer-events:none}
+.graph-loading .top button{pointer-events:none}
+.graph-loading .relation-palette{visibility:hidden}
+.relation-palette{position:absolute;right:10px;top:var(--toolbar-height,76px);z-index:4;display:flex;align-items:flex-start;gap:3px;max-width:calc(100% - 20px);padding:3px;background:transparent;border-radius:10px;overflow-x:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.relation-palette .legend{display:grid;grid-template-rows:repeat(2,26px);grid-auto-flow:column;grid-auto-columns:max-content;gap:2px 3px}
+.legend-filter{display:inline-flex;align-items:center;justify-content:flex-start;gap:5px;flex:none;height:26px;padding:3px 6px;border:1px solid transparent;background:#10182bc9;color:var(--text);border-radius:13px;font:inherit;font-size:11px;white-space:nowrap;cursor:pointer}
+.legend-filter .dot{flex:none;width:12px;height:12px;background:var(--relation-color)}
+.legend-name{white-space:nowrap}
+.legend-check,.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.legend-filter[aria-pressed='true']{border-color:var(--relation-color);background:#344466;box-shadow:inset 0 0 0 1px var(--relation-color)}
+.legend-filter:hover{background:#243657}.legend-filter:focus-visible,.legend-all:focus-visible{outline:2px solid #70a7ff;outline-offset:-2px}
+.legend-all{flex:none;height:26px;padding:3px 7px;font-size:11px;border-radius:12px;background:#10182bc9;border-color:transparent}
+.legend-all[aria-pressed='true']{border-color:#70a7ff}
+#sideToggle:disabled{opacity:.45;cursor:default}
+@media(max-width:900px){.relation-palette{right:6px;max-width:calc(100% - 12px)}.relation-palette .legend{grid-template-rows:repeat(2,32px)}.legend-filter{height:32px;padding:4px 8px;font-size:12px}.legend-all{min-height:32px}}
+.graph-loading .stage-wrap::after{content:'正在读取图谱…';position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);pointer-events:none}
 .side-header{display:flex;align-items:center;justify-content:space-between;gap:12px}.side-header h2{margin:0}.side-close{font-size:20px;line-height:1;padding:5px 10px}
 @media(max-width:900px){
   .app{height:100dvh}.top{height:auto;min-height:56px;padding:8px;gap:8px;overflow-x:auto;flex-shrink:0}.top .spacer{flex:0 0 4px}.top .btn,.top>div{flex:none}.top h1{font-size:15px}
@@ -31,6 +54,11 @@
 /** Pure graph rules shared by the offline page, build and regression checks. */
 var WosoGraph;
 (function (WosoGraph) {
+    /** A camera change must never choose a different position along an edge. */
+    function relationshipLabelPosition(x1, y1, x2, y2, contentScale = 1) {
+        return { x: (x1 + x2) / 2, y: (y1 + y2) / 2 - 7 * contentScale };
+    }
+    WosoGraph.relationshipLabelPosition = relationshipLabelPosition;
     const knownKinds = new Set(['ex', 'cur', 'married', 'engaged', 'exQuestion', 'curQuestion', 'nt', 'club', 'formerClub', 'friend', 'family', 'other']);
     function isRecord(value) {
         return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -168,9 +196,10 @@ var WosoGraph;
 <script data-source="core.js">
 const KEY=document.getElementById('snapshot-data')?.dataset.storageKey||'relationship-map-v1';
 const types={ex:'前任',cur:'现任',married:'现任（已婚）',nt:'国家队队友',club:'俱乐部队友',formerClub:'前俱乐部队友',friend:'好友',family:'家人',other:'其他'};
-const colors={ex:'#fb7185',cur:'#f472b6',married:'#f97316',nt:'#60a5fa',club:'#34d399',formerClub:'#2dd4bf',friend:'#fbbf24',family:'#c084fc',other:'#94a3b8'};
+const colors={ex:'#ff5b5b',cur:'#22d3ee',married:'#fb923c',nt:'#60a5fa',club:'#4ade80',formerClub:'#a3b835',friend:'#facc15',family:'#a78bfa',other:'#94a3b8'};
 const sample={nodes:[{id:'a',name:'林夏',meta:'国家队',intro:'前锋，国家队核心球员。',avatar:'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200',x:28,y:38},{id:'b',name:'苏菲',meta:'星辰俱乐部',intro:'中场，擅长组织进攻。',avatar:'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=200',x:55,y:27},{id:'c',name:'艾米',meta:'海湾俱乐部',intro:'门将，反应敏捷。',avatar:'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',x:73,y:57},{id:'d',name:'诺拉',meta:'国家队',intro:'边锋，速度出色。',avatar:'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200',x:34,y:70}],edges:[{id:'e1',source:'a',target:'b',type:'friend',label:'好友'},{id:'e2',source:'a',target:'d',type:'nt',label:'国家队队友'},{id:'e3',source:'b',target:'c',type:'club',label:'俱乐部队友'}]};
-let data=load(), selected=null, edgeMode=false, edgeStart=null, scale=1, pan={x:0,y:0}, dragging=null, movingCanvas=null;
+let data=load(), selected=null, edgeMode=false, edgeStart=null, scale=1, pan={x:0,y:0}, dragging=null;
+let appReady=false;
 function load(){try{const saved=localStorage.getItem(KEY);if(saved)return JSON.parse(saved)}catch(e){}try{const snapshot=document.getElementById('snapshot-data');if(snapshot)return JSON.parse(snapshot.textContent).data}catch(e){}return sample}
 let storageDbPromise=null,localEditsSinceOpen=false,storageWarningShown=false;
 function storageWarning(){if(!storageWarningShown){storageWarningShown=true;alert('浏览器未能保存图谱。请立即点击“导出数据”备份，避免刷新后丢失本次修改。')}}
@@ -181,6 +210,7 @@ function openStorageDb(){
     request.onupgradeneeded=()=>request.result.createObjectStore('graphs');
     request.onsuccess=()=>resolve(request.result);
     request.onerror=()=>reject(request.error);
+    request.onblocked=()=>reject(new Error('Browser storage is blocked'));
   });
   return storageDbPromise;
 }
@@ -202,7 +232,8 @@ function restoreFromStorage(){
     request.onerror=()=>reject(request.error);
   })).then(stored=>{
     if(!stored||localEditsSinceOpen||!Array.isArray(stored.nodes)||!Array.isArray(stored.edges))return;
-    data=stored;selected=null;render();scheduleCanvasGeometryUpdate();
+    data=stored;selected=null;
+    if(appReady){render();scheduleCanvasGeometryUpdate()}
   }).catch(()=>{});
 }
 function uid(p){return p+Math.random().toString(36).slice(2,8)}
@@ -244,7 +275,7 @@ function addRelation(a,b){
 let cancelNodeDrag=null;
 function startNode(e,n){
   if(e.button!==0||e.isPrimary===false)return;
-  e.stopPropagation();dragging=false;
+  e.preventDefault();e.stopPropagation();dragging=false;
   const el=e.currentTarget,id=e.pointerId,startX=e.clientX,startY=e.clientY,ox=n.x,oy=n.y;
   const move=ev=>{if(ev.pointerId!==id)return;if(Math.hypot(ev.clientX-startX,ev.clientY-startY)>4)dragging=true;if(!dragging)return;n.x=ox+(ev.clientX-startX)/WORLD_WIDTH*100/scale;n.y=oy+(ev.clientY-startY)/WORLD_HEIGHT*100/scale;const p=pos(n);el.style.left=p.x*scale+pan.x+'px';el.style.top=p.y*scale+pan.y+'px';edges.style.visibility='hidden'};
   const up=ev=>{if(ev&&ev.pointerId!==id)return;window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);cancelNodeDrag=null;edges.style.visibility='visible';if(dragging){save();render()}};
@@ -259,7 +290,7 @@ function startNode(e,n){
    scale=next;
    render();
  }
- stage.onwheel=e=>{e.preventDefault();const r=stage.getBoundingClientRect();zoomAt(e.deltaY<0?1.1:.9,e.clientX-r.left,e.clientY-r.top)};stage.onpointerdown=e=>{if(e.target!==stage&&e.target!==edges)return;movingCanvas={x:e.clientX,y:e.clientY,px:pan.x,py:pan.y};stage.classList.add('dragging');e.preventDefault()};window.onpointermove=e=>{if(movingCanvas){pan.x=movingCanvas.px+e.clientX-movingCanvas.x;pan.y=movingCanvas.py+e.clientY-movingCanvas.y;render()}};window.onpointerup=()=>{movingCanvas=null;stage.classList.remove('dragging')};
+stage.onwheel=e=>{e.preventDefault();const r=stage.getBoundingClientRect();zoomAt(e.deltaY<0?1.1:.9,e.clientX-r.left,e.clientY-r.top)};
  addNode.onclick=()=>{let n={id:uid('n'),name:'新人物',meta:'',intro:'',avatar:'',x:(stage.clientWidth/2-pan.x)/scale/WORLD_WIDTH*100,y:(stage.clientHeight/2-pan.y)/scale/WORLD_HEIGHT*100};data.nodes.push(n);selected=n.id;save();render()};addEdge.onclick=()=>{edgeMode=true;edgeStart=null;alert('请依次点击关系两端的人物节点')};document.getElementById('closeDrawer').onclick=hideDrawer;zoomIn.onclick=()=>zoomAt(1.2,stage.clientWidth/2,stage.clientHeight/2);zoomOut.onclick=()=>zoomAt(1/1.2,stage.clientWidth/2,stage.clientHeight/2);zoomFit.onclick=()=>{scale=1;pan={x:0,y:0};render()};clearBtn.onclick=()=>{if(confirm('清空全部人物和关系？')){data={nodes:[],edges:[]};selected=null;save();render()}};
 exportHtml.onclick=()=>{let blob=new Blob(['<!doctype html>\n'+document.documentElement.outerHTML],{type:'text/html;charset=utf-8'});download(blob,'人物关系图谱.html')};exportPng.onclick=async()=>{let svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${stage.clientWidth}" height="${stage.clientHeight}"><rect width="100%" height="100%" fill="#0b1020"/>${edges.innerHTML}</svg>`;let b=new Blob([svg],{type:'image/svg+xml'});download(b,'人物关系图谱.svg')};function download(b,n){let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}function attr(v){return esc(v).replace(/`/g,'&#96;')}
 
@@ -425,12 +456,9 @@ exportPng.onclick=async()=>{
   pairLines.forEach((line,key)=>{
     const text=pairLabels.get(key).join('&');
     const textWidth=ctx.measureText(text).width;
-    for(const t of [.5,.38,.62,.27,.73,.16,.84]){
-      const x=line.x1+(line.x2-line.x1)*t;
-      const y=line.y1+(line.y2-line.y1)*t-7;
-      const box={left:x-textWidth/2-5,right:x+textWidth/2+5,top:y-15,bottom:y+4};
-      if(!occupied.some(other=>overlaps(box,other))){ctx.fillText(text,x,y);occupied.push(box);break}
-    }
+    const {x,y}=WosoGraph.relationshipLabelPosition(line.x1,line.y1,line.x2,line.y2);
+    const box={left:x-textWidth/2-5,right:x+textWidth/2+5,top:y-15,bottom:y+4};
+    if(!occupied.some(other=>overlaps(box,other))){ctx.fillText(text,x,y);occupied.push(box)}
   });
   const images=await Promise.all(shownNodes.map(n=>loadImageForExport(n.avatar)));
   shownNodes.forEach((n,i)=>{
@@ -447,6 +475,8 @@ exportPng.onclick=async()=>{
 };
 exportHtml.onclick=()=>{
   const copy=document.documentElement.cloneNode(true);
+  copy.classList.add('graph-loading');
+  copy.querySelector('#graphScene')?.removeAttribute('style');
   copy.querySelector('#snapshot-data')?.remove();copy.querySelector('#viewStyles')?.remove();
   copy.querySelectorAll('body > :not(.app):not(script)').forEach(el=>el.remove());
   [...copy.querySelector('.toolbar').children].slice(2).forEach(el=>el.remove());
@@ -465,7 +495,11 @@ const unscaledRenderNodes=renderNodes;
 renderNodes=()=>{
   unscaledRenderNodes();
   const contentScale=Math.min(1,2*scale);
-  nodes.querySelectorAll('.node').forEach(el=>el.style.setProperty('--node-scale',contentScale));
+  nodes.querySelectorAll('.node').forEach(el=>{
+    el.style.setProperty('--node-scale',contentScale);
+    el.setAttribute('draggable','false');
+    const avatar=el.querySelector('.avatar');if(avatar)avatar.draggable=false;
+  });
 };
 const unscaledRenderEdges=renderEdges;
 renderEdges=()=>{
@@ -486,10 +520,20 @@ let sideClose=sideHeader.querySelector('#sideClose');
 if(!sideClose){sideClose=document.createElement('button');sideClose.id='sideClose';sideClose.className='btn side-close';sideClose.type='button';sideClose.setAttribute('aria-label','关闭编辑面板');sideClose.textContent='×';sideHeader.appendChild(sideClose)}
 let sideToggle=document.getElementById('sideToggle');
 if(!sideToggle){sideToggle=document.createElement('button');sideToggle.id='sideToggle';sideToggle.className='btn';sideToggle.type='button';sideToggle.textContent='编辑面板';document.querySelector('.top').insertBefore(sideToggle,document.getElementById('clearBtn'))}
-function setSideOpen(open){mainPanel.classList.toggle('side-collapsed',!open);sideToggle.setAttribute('aria-expanded',String(open));sidePanel.setAttribute('aria-hidden',String(!open));scheduleCanvasGeometryUpdate()}
+function setSideOpen(open){open=!!open&&data.nodes.some(node=>node.id===selected);const changed=mainPanel.classList.contains('side-collapsed')===open;mainPanel.classList.toggle('side-collapsed',!open);sideToggle.setAttribute('aria-expanded',String(open));sidePanel.setAttribute('aria-hidden',String(!open));if(changed)scheduleCanvasGeometryUpdate()}
+const renderEditorBeforeAutoPanel=renderEditor;
+let editorPanelSelection=null;
+renderEditor=()=>{
+  renderEditorBeforeAutoPanel();
+  const current=data.nodes.some(node=>node.id===selected)?selected:null;
+  sideToggle.disabled=!current;
+  if(!current||current!==editorPanelSelection)setSideOpen(!!current);
+  editorPanelSelection=current;
+};
 // 侧栏、窗口或设备方向变化都会改变画布尺寸；SVG 的 viewBox 与节点必须在同一帧更新。
 let canvasGeometryFrame=0;
 function scheduleCanvasGeometryUpdate(){
+  if(!appReady)return;
   if(canvasGeometryFrame)return;
   canvasGeometryFrame=requestAnimationFrame(()=>{
     canvasGeometryFrame=0;
@@ -512,19 +556,13 @@ function placeRelationshipLabels(){
     if(!label||!line||group.style.display==='none'||label.style.display==='none')return;
     const x1=Number(line.getAttribute('x1')),y1=Number(line.getAttribute('y1'));
     const x2=Number(line.getAttribute('x2')),y2=Number(line.getAttribute('y2'));
-    const length=Math.hypot(x2-x1,y2-y1)||1;
-    let placed=false;
-    for(const t of [.5,.38,.62,.27,.73,.16,.84]){
-      // Keep labels on the relationship line. Previously they were shifted
-      // perpendicular to the edge to dodge nodes, which became conspicuous
-      // as zoom changed and made labels appear detached in empty space.
-      label.setAttribute('x',x1+(x2-x1)*t);
-      label.setAttribute('y',y1+(y2-y1)*t-7*Math.min(1,2*scale));
-      const r=label.getBBox();
-      const box={left:r.x-5,right:r.x+r.width+5,top:r.y-4,bottom:r.y+r.height+4};
-      if(!occupied.some(other=>overlaps(box,other))){occupied.push(box);placed=true;break}
-    }
-    if(!placed)label.style.display='none';
+    // Hide crowded text instead of changing its anchor as the camera zooms.
+    const {x,y}=WosoGraph.relationshipLabelPosition(x1,y1,x2,y2,Math.min(1,2*scale));
+    label.setAttribute('x',x);label.setAttribute('y',y);
+    const r=label.getBBox();
+    const box={left:r.x-5,right:r.x+r.width+5,top:r.y-4,bottom:r.y+r.height+4};
+    if(occupied.some(other=>overlaps(box,other)))label.style.display='none';
+    else occupied.push(box);
     if(!group.querySelector('title')){
       const title=document.createElementNS('http://www.w3.org/2000/svg','title');
       title.textContent=label.textContent;
@@ -542,7 +580,6 @@ const previousAddNode=addNode.onclick;
 addNode.onclick=e=>{previousAddNode(e);if(matchMedia('(max-width:900px)').matches)setSideOpen(true)};
 const snapshotView=document.getElementById('snapshot-data');
 if(snapshotView){try{const savedView=JSON.parse(snapshotView.textContent).view||{};activeFilters=Array.isArray(savedView.filters)?savedView.filters:null;focusId=data.nodes.some(n=>n.id===savedView.focusId)?savedView.focusId:null;searchInput.value=focusId?savedView.search||data.nodes.find(n=>n.id===focusId)?.name||'':''}catch(e){}}
-restoreFromStorage();
 scheduleCanvasGeometryUpdate();
 
 </script>
@@ -553,7 +590,7 @@ scheduleCanvasGeometryUpdate();
 <script data-source="filters.js">
 // 关系标签按具体语义着色；旧数据的 type 即使是“其他”，也会根据 label 正确归类。
 Object.assign(types,{engaged:'现任（订婚）',curQuestion:'现任？',exQuestion:'前任？'});
-Object.assign(colors,{engaged:'#a78bfa',curQuestion:'#f59e0b',exQuestion:'#38bdf8'});
+Object.assign(colors,{engaged:'#f472b6',curQuestion:'#f5f0dc',exQuestion:'#c49170'});
 function relationKeyList(edge){
   return WosoGraph.relationKeys(edge);
 }
@@ -655,7 +692,6 @@ function viewNodeIds(){
 visibleNodesForExport=n=>viewNodeIds().has(n.id);
 const previousStructuredRender=render;
 render=()=>{previousStructuredRender();applyCurrentView();refreshDropdownFilters()};
-renderLegend=()=>{legend.innerHTML=Object.keys(types).map(k=>`<div class="tag"><i class="dot" style="background:${colors[k]||colors.other}"></i>${types[k]}</div>`).join('')};
 // 给人物编辑器增加明确的国家和俱乐部字段；旧资料仍可由“国家/俱乐部”自动解析。
 function enrichPersonEditor(){
   const n=data.nodes.find(x=>x.id===selected),meta=editor.querySelector('#fMeta'),saveButton=editor.querySelector('#saveNode');
@@ -679,6 +715,57 @@ const exportHtmlWithFilters=exportHtml.onclick;
 exportHtml.onclick=()=>exportHtmlWithFilters();
 
 </script>
+<script data-source="legend-filters.js">
+// The legend uses the same applied filters as the relationship dropdown.
+const relationLegendElement=document.getElementById('legend');
+const oldLegendSection=relationLegendElement.closest('.section');
+let relationPalette=document.getElementById('relationPalette');
+if(!relationPalette){
+  relationPalette=document.createElement('div');relationPalette.id='relationPalette';relationPalette.className='relation-palette';
+  relationPalette.innerHTML='<span id="relationPaletteTitle" class="sr-only">关系筛选</span><button class="btn legend-all" type="button" title="清除关系筛选">全部</button>';
+  document.querySelector('.stage-wrap').appendChild(relationPalette);
+}
+relationPalette.appendChild(relationLegendElement);
+relationPalette.setAttribute('role','group');relationPalette.setAttribute('aria-label','关系颜色筛选，可多选');
+oldLegendSection?.remove();
+function toggleLegendRelation(key){
+  const next=cloneStructuredFilters(activeFilters);
+  if(key===null)next.relations=[];
+  else if(Object.prototype.hasOwnProperty.call(types,key)){
+    next.relations=next.relations.includes(key)?next.relations.filter(value=>value!==key):[...next.relations,key];
+  }else return;
+  // Palette clicks apply immediately. Pending dropdown edits are discarded,
+  // while already applied club/country selections remain intact.
+  draftFilterState=next;applyDropdownFilters();
+}
+relationLegendElement.addEventListener('click',event=>{
+  const button=event.target.closest('button[data-relation]');
+  if(button&&relationLegendElement.contains(button))toggleLegendRelation(button.dataset.relation);
+});
+relationPalette.querySelector('.legend-all').onclick=()=>toggleLegendRelation(null);
+renderLegend=()=>{
+  const chosen=activeFilters?.relations||[],keys=Object.keys(types);
+  let buttons=[...relationLegendElement.querySelectorAll('button[data-relation]')];
+  if(buttons.length!==keys.length||buttons.some((button,index)=>button.dataset.relation!==keys[index])){
+    relationLegendElement.replaceChildren();buttons=keys.map(key=>{
+      const button=document.createElement('button');button.type='button';button.className='legend-filter';button.dataset.relation=key;
+      const dot=document.createElement('i');dot.className='dot';dot.setAttribute('aria-hidden','true');
+      const name=document.createElement('span');name.className='legend-name';
+      const check=document.createElement('span');check.className='legend-check';check.textContent='✓';check.setAttribute('aria-hidden','true');
+      button.append(dot,name,check);relationLegendElement.appendChild(button);return button;
+    });
+  }
+  buttons.forEach(button=>{
+    const key=button.dataset.relation,selected=chosen.includes(key),color=colors[key]||colors.other;
+    button.setAttribute('aria-pressed',String(selected));button.setAttribute('aria-label',types[key]);
+    button.title=(selected?'取消筛选：':'筛选：')+types[key];button.style.setProperty('--relation-color',color);
+    button.querySelector('.dot').style.background=color;button.querySelector('.legend-name').textContent=types[key];
+  });
+  relationPalette.querySelector('#relationPaletteTitle').textContent='关系图例 / 筛选'+(chosen.length?'（已选 '+chosen.length+'）':'');
+  relationPalette.querySelector('.legend-all').setAttribute('aria-pressed',String(!chosen.length));
+};
+
+</script>
 <script data-source="responsive.js">
 // Responsive camera and touch controls share the same fixed world coordinates.
 const responsiveStyle=document.createElement('style');
@@ -696,6 +783,12 @@ responsiveStyle.textContent=`
 `;
 document.head.appendChild(responsiveStyle);
 const compactScreen=matchMedia('(max-width:900px)');
+// One composited scene replaces per-edge updates while a finger is moving.
+let graphScene=document.getElementById('graphScene');
+if(!graphScene){
+ graphScene=document.createElement('div');graphScene.id='graphScene';
+ stage.insertBefore(graphScene,edges);graphScene.append(edges,nodes);
+}
 const toolbarElement=document.querySelector('.toolbar');
 function measureToolbar(){document.querySelector('.stage-wrap').style.setProperty('--toolbar-height',(toolbarElement.offsetHeight+24)+'px')}
 new ResizeObserver(measureToolbar).observe(toolbarElement);measureToolbar();
@@ -714,7 +807,7 @@ refreshDropdownFilters=()=>{refreshMenusBeforePosition();positionFilterMenus()};
 window.addEventListener('resize',positionFilterMenus);document.querySelector('.top').addEventListener('scroll',positionFilterMenus);
 window.visualViewport?.addEventListener('resize',positionFilterMenus);
 window.visualViewport?.addEventListener('scroll',positionFilterMenus);
-let cameraAutoFit=true,lastCameraSize=null;
+let cameraAutoFit=true,lastCameraSize=null,geometryPending=false;
 function fitGraphToScreen(){
  const ids=viewNodeIds(),points=data.nodes.filter(n=>ids.has(n.id)).map(pos);
  if(!points.length){scale=1;pan={x:stage.clientWidth/2,y:stage.clientHeight/2};return}
@@ -727,63 +820,123 @@ zoomFit.onclick=()=>{cameraAutoFit=true;fitGraphToScreen();render()};
 const zoomBeforeCamera=zoomAt;
 zoomAt=(factor,x,y)=>{cameraAutoFit=false;zoomBeforeCamera(factor,x,y)};
 scheduleCanvasGeometryUpdate=()=>{
+ if(!appReady)return;
  if(canvasGeometryFrame)return;
  canvasGeometryFrame=requestAnimationFrame(()=>{
   canvasGeometryFrame=0;if(!stage.clientWidth||!stage.clientHeight)return;
+  if(canvasPointers.size){geometryPending=true;return}
+  geometryPending=false;
   if(cameraAutoFit)fitGraphToScreen();
   else if(lastCameraSize){pan.x+=(stage.clientWidth-lastCameraSize.width)/2;pan.y+=(stage.clientHeight-lastCameraSize.height)/2}
   lastCameraSize={width:stage.clientWidth,height:stage.clientHeight};
-  render();positionFilterMenus();
+  clearPanPreview();render();positionFilterMenus();
  });
 };
 compactScreen.addEventListener('change',event=>{setSideOpen(!event.matches);measureToolbar();scheduleCanvasGeometryUpdate()});
 // Track pointer IDs so a second finger cannot overwrite an active single drag.
-stage.onpointerdown=null;window.onpointermove=null;window.onpointerup=null;
 const canvasPointers=new Map();let pinch=null,panPointer=null,suppressCanvasClickUntil=0;
+let panPreviewFrame=0,previewCamera=null;
+function clearPanPreview(){
+ if(panPreviewFrame){cancelAnimationFrame(panPreviewFrame);panPreviewFrame=0}
+ graphScene.style.transform='';graphScene.style.willChange='';previewCamera=null;
+}
+function finishPanPreview(){
+ if(!previewCamera){clearPanPreview();return}
+ const original=previewCamera,ratio=scale/original.scale;
+ const dx=pan.x-original.x*ratio,dy=pan.y-original.y*ratio;
+ const contentScale=Math.min(1,2*scale),oldContentScale=Math.min(1,2*original.scale);
+ const people=new Map(data.nodes.map(person=>[person.id,person]));
+ // Keep the existing elements and image decodes. No editor/menu rebuilding.
+ nodes.querySelectorAll('.node').forEach(el=>{
+  const person=people.get(el.dataset.id);if(!person)return;
+  const point=pos(person);el.style.left=point.x*scale+pan.x+'px';el.style.top=point.y*scale+pan.y+'px';el.style.setProperty('--node-scale',contentScale);
+ });
+ edges.querySelectorAll('g').forEach(group=>{
+  const line=group.querySelector('.edge'),label=group.querySelector('.edge-label');
+  if(line){for(const attr of ['x1','x2'])line.setAttribute(attr,Number(line.getAttribute(attr))*ratio+dx);for(const attr of ['y1','y2'])line.setAttribute(attr,Number(line.getAttribute(attr))*ratio+dy);line.style.strokeWidth=Math.max(1,3*scale)+'px'}
+  if(label){label.setAttribute('x',Number(label.getAttribute('x'))*ratio+dx);label.setAttribute('y',Number(label.getAttribute('y'))*ratio+dy+7*(oldContentScale*ratio-contentScale));label.style.fontSize=12*contentScale+'px';label.style.strokeWidth=4*contentScale+'px'}
+ });
+ clearPanPreview();
+ if(ratio!==1){applyCurrentView();placeRelationshipLabels()}
+}
+function schedulePanPreview(){
+ if(!previewCamera)previewCamera={scale:pinch?.scale||scale,x:panPointer?.px??pinch?.panX??pan.x,y:panPointer?.py??pinch?.panY??pan.y};
+ graphScene.style.willChange='transform';
+ if(panPreviewFrame)return;
+ panPreviewFrame=requestAnimationFrame(()=>{
+  panPreviewFrame=0;if(!previewCamera)return;
+  const ratio=scale/previewCamera.scale,dx=pan.x-previewCamera.x*ratio,dy=pan.y-previewCamera.y*ratio;
+  graphScene.style.transform=`translate3d(${dx}px,${dy}px,0) scale(${ratio})`;
+ });
+}
 function beginPinch(){
+ finishPanPreview();
  const [a,b]=[...canvasPointers.values()],r=stage.getBoundingClientRect();
  const x=(a.x+b.x)/2-r.left,y=(a.y+b.y)/2-r.top;
- pinch={distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),scale,worldX:(x-pan.x)/scale,worldY:(y-pan.y)/scale};
+ pinch={distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),scale,panX:pan.x,panY:pan.y,worldX:(x-pan.x)/scale,worldY:(y-pan.y)/scale,rect:r};
  panPointer=null;blankPointerStart=null;cancelNodeDrag?.();cameraAutoFit=false;
  suppressCanvasClickUntil=performance.now()+500;
 }
 stage.addEventListener('pointerdown',e=>{
- if(e.button!==0||e.target.closest('.zoom'))return;
+ if(!appReady||e.button!==0||e.target.closest('.zoom'))return;
  canvasPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
  if(canvasPointers.size>=2){beginPinch();e.preventDefault();e.stopImmediatePropagation();return}
- if(e.target===stage||e.target===edges||e.target===nodes){panPointer={id:e.pointerId,x:e.clientX,y:e.clientY,px:pan.x,py:pan.y};stage.setPointerCapture(e.pointerId)}
+ // A drag may start on an SVG line or label too; a stationary click still
+ // reaches its relationship action. Capture only after crossing the threshold.
+ if(!e.target.closest('.node')){
+  panPointer={id:e.pointerId,x:e.clientX,y:e.clientY,px:pan.x,py:pan.y,moved:false};e.preventDefault();
+ }
 },true);
+stage.addEventListener('dragstart',e=>e.preventDefault());
+stage.addEventListener('selectstart',e=>e.preventDefault());
 window.addEventListener('pointermove',e=>{
  if(!canvasPointers.has(e.pointerId))return;
+ if(e.pointerType==='mouse'&&e.buttons===0){endCanvasPointer(e);return}
  canvasPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
  if(pinch&&canvasPointers.size>=2){
-  const [a,b]=[...canvasPointers.values()],r=stage.getBoundingClientRect();
+  const [a,b]=[...canvasPointers.values()],r=pinch.rect;
   scale=Math.max(.001,Math.min(MAX_ZOOM,pinch.scale*Math.hypot(a.x-b.x,a.y-b.y)/pinch.distance));
   pan={x:(a.x+b.x)/2-r.left-pinch.worldX*scale,y:(a.y+b.y)/2-r.top-pinch.worldY*scale};
-  suppressCanvasClickUntil=performance.now()+500;e.preventDefault();render();
+  suppressCanvasClickUntil=performance.now()+500;e.preventDefault();schedulePanPreview();
  }else if(panPointer?.id===e.pointerId){
   const dx=e.clientX-panPointer.x,dy=e.clientY-panPointer.y;
-  if(Math.hypot(dx,dy)<=4)return;
+  if(!panPointer.moved&&Math.hypot(dx,dy)<=4)return;
+  if(!panPointer.moved){panPointer.moved=true;stage.setPointerCapture(e.pointerId)}
   cameraAutoFit=false;pan={x:panPointer.px+dx,y:panPointer.py+dy};
-  blankPointerStart=null;suppressCanvasClickUntil=performance.now()+350;stage.classList.add('dragging');render();
+  blankPointerStart=null;suppressCanvasClickUntil=performance.now()+350;stage.classList.add('dragging');e.preventDefault();schedulePanPreview();
  }
 },{passive:false});
 function endCanvasPointer(e){
- canvasPointers.delete(e.pointerId);if(panPointer?.id===e.pointerId)panPointer=null;
- if(pinch){suppressCanvasClickUntil=performance.now()+500;blankPointerStart=null;if(canvasPointers.size<2)pinch=null}
- if(!canvasPointers.size)stage.classList.remove('dragging');
+ if(!canvasPointers.has(e.pointerId))return;
+ if(panPointer?.id===e.pointerId){finishPanPreview();panPointer=null}
+ canvasPointers.delete(e.pointerId);
+ if(e.type==='pointercancel'||e.type==='lostpointercapture')blankPointerStart=null;
+ if(pinch){suppressCanvasClickUntil=performance.now()+500;blankPointerStart=null;if(canvasPointers.size<2){finishPanPreview();pinch=null}}
+ if(!canvasPointers.size){stage.classList.remove('dragging');if(geometryPending)scheduleCanvasGeometryUpdate()}
 }
 window.addEventListener('pointerup',endCanvasPointer,true);
 window.addEventListener('pointercancel',endCanvasPointer,true);
+stage.addEventListener('lostpointercapture',endCanvasPointer);
 stage.addEventListener('click',e=>{if(performance.now()<suppressCanvasClickUntil){e.preventDefault();e.stopImmediatePropagation()}},true);
-window.addEventListener('blur',()=>{canvasPointers.clear();pinch=null;panPointer=null;blankPointerStart=null;cancelNodeDrag?.();stage.classList.remove('dragging')});
+window.addEventListener('blur',()=>{finishPanPreview();canvasPointers.clear();pinch=null;panPointer=null;blankPointerStart=null;cancelNodeDrag?.();stage.classList.remove('dragging')});
+const renderBeforeGesturePreview=render;
+render=()=>{clearPanPreview();renderBeforeGesturePreview()};
 
 </script>
 <script data-source="bootstrap.js">
-// Start only after every feature has registered its rendering and event hooks.
-render();
-measureToolbar();
-scheduleCanvasGeometryUpdate();
+// Reveal only the restored, fitted graph, never the default scale=1 view.
+async function startApplication(){
+  await restoreFromStorage();
+  await new Promise(resolve=>requestAnimationFrame(resolve));
+  measureToolbar();
+  if(focusId&&!data.nodes.some(person=>person.id===focusId)){focusId=null;searchInput.value=''}
+  fitGraphToScreen();
+  lastCameraSize={width:stage.clientWidth,height:stage.clientHeight};
+  appReady=true;
+  render();
+  document.documentElement.classList.remove('graph-loading');
+}
+const applicationReady=startApplication();
 
 </script>
 

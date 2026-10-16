@@ -10,6 +10,7 @@
     "view-export-layout.js",
     "contributions.js",
     "filters.js",
+    "legend-filters.js",
     "responsive.js",
     "bootstrap.js"
   ]

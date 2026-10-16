@@ -20,6 +20,10 @@ namespace WosoGraph {
   }
   export interface Graph { nodes: Person[]; edges: Relationship[] }
   export interface Filters { relations: string[]; clubs: string[]; countries: string[] }
+  /** A camera change must never choose a different position along an edge. */
+  export function relationshipLabelPosition(x1: number, y1: number, x2: number, y2: number, contentScale = 1): { x: number; y: number } {
+    return { x: (x1 + x2) / 2, y: (y1 + y2) / 2 - 7 * contentScale };
+  }
   export type RelationKind = 'ex' | 'cur' | 'married' | 'engaged' | 'exQuestion' | 'curQuestion' | 'nt' | 'club' | 'formerClub' | 'friend' | 'family' | 'other';
   type RecordValue = Record<string, unknown>;
   const knownKinds = new Set<string>(['ex','cur','married','engaged','exQuestion','curQuestion','nt','club','formerClub','friend','family','other']);

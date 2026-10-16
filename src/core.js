@@ -1,8 +1,9 @@
 const KEY=document.getElementById('snapshot-data')?.dataset.storageKey||'relationship-map-v1';
 const types={ex:'前任',cur:'现任',married:'现任（已婚）',nt:'国家队队友',club:'俱乐部队友',formerClub:'前俱乐部队友',friend:'好友',family:'家人',other:'其他'};
-const colors={ex:'#fb7185',cur:'#f472b6',married:'#f97316',nt:'#60a5fa',club:'#34d399',formerClub:'#2dd4bf',friend:'#fbbf24',family:'#c084fc',other:'#94a3b8'};
+const colors={ex:'#ff5b5b',cur:'#22d3ee',married:'#fb923c',nt:'#60a5fa',club:'#4ade80',formerClub:'#a3b835',friend:'#facc15',family:'#a78bfa',other:'#94a3b8'};
 const sample={nodes:[{id:'a',name:'林夏',meta:'国家队',intro:'前锋，国家队核心球员。',avatar:'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200',x:28,y:38},{id:'b',name:'苏菲',meta:'星辰俱乐部',intro:'中场，擅长组织进攻。',avatar:'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=200',x:55,y:27},{id:'c',name:'艾米',meta:'海湾俱乐部',intro:'门将，反应敏捷。',avatar:'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',x:73,y:57},{id:'d',name:'诺拉',meta:'国家队',intro:'边锋，速度出色。',avatar:'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200',x:34,y:70}],edges:[{id:'e1',source:'a',target:'b',type:'friend',label:'好友'},{id:'e2',source:'a',target:'d',type:'nt',label:'国家队队友'},{id:'e3',source:'b',target:'c',type:'club',label:'俱乐部队友'}]};
-let data=load(), selected=null, edgeMode=false, edgeStart=null, scale=1, pan={x:0,y:0}, dragging=null, movingCanvas=null;
+let data=load(), selected=null, edgeMode=false, edgeStart=null, scale=1, pan={x:0,y:0}, dragging=null;
+let appReady=false;
 function load(){try{const saved=localStorage.getItem(KEY);if(saved)return JSON.parse(saved)}catch(e){}try{const snapshot=document.getElementById('snapshot-data');if(snapshot)return JSON.parse(snapshot.textContent).data}catch(e){}return sample}
 let storageDbPromise=null,localEditsSinceOpen=false,storageWarningShown=false;
 function storageWarning(){if(!storageWarningShown){storageWarningShown=true;alert('浏览器未能保存图谱。请立即点击“导出数据”备份，避免刷新后丢失本次修改。')}}
@@ -13,6 +14,7 @@ function openStorageDb(){
     request.onupgradeneeded=()=>request.result.createObjectStore('graphs');
     request.onsuccess=()=>resolve(request.result);
     request.onerror=()=>reject(request.error);
+    request.onblocked=()=>reject(new Error('Browser storage is blocked'));
   });
   return storageDbPromise;
 }
@@ -34,7 +36,8 @@ function restoreFromStorage(){
     request.onerror=()=>reject(request.error);
   })).then(stored=>{
     if(!stored||localEditsSinceOpen||!Array.isArray(stored.nodes)||!Array.isArray(stored.edges))return;
-    data=stored;selected=null;render();scheduleCanvasGeometryUpdate();
+    data=stored;selected=null;
+    if(appReady){render();scheduleCanvasGeometryUpdate()}
   }).catch(()=>{});
 }
 function uid(p){return p+Math.random().toString(36).slice(2,8)}
@@ -76,7 +79,7 @@ function addRelation(a,b){
 let cancelNodeDrag=null;
 function startNode(e,n){
   if(e.button!==0||e.isPrimary===false)return;
-  e.stopPropagation();dragging=false;
+  e.preventDefault();e.stopPropagation();dragging=false;
   const el=e.currentTarget,id=e.pointerId,startX=e.clientX,startY=e.clientY,ox=n.x,oy=n.y;
   const move=ev=>{if(ev.pointerId!==id)return;if(Math.hypot(ev.clientX-startX,ev.clientY-startY)>4)dragging=true;if(!dragging)return;n.x=ox+(ev.clientX-startX)/WORLD_WIDTH*100/scale;n.y=oy+(ev.clientY-startY)/WORLD_HEIGHT*100/scale;const p=pos(n);el.style.left=p.x*scale+pan.x+'px';el.style.top=p.y*scale+pan.y+'px';edges.style.visibility='hidden'};
   const up=ev=>{if(ev&&ev.pointerId!==id)return;window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);cancelNodeDrag=null;edges.style.visibility='visible';if(dragging){save();render()}};
@@ -91,6 +94,6 @@ function startNode(e,n){
    scale=next;
    render();
  }
- stage.onwheel=e=>{e.preventDefault();const r=stage.getBoundingClientRect();zoomAt(e.deltaY<0?1.1:.9,e.clientX-r.left,e.clientY-r.top)};stage.onpointerdown=e=>{if(e.target!==stage&&e.target!==edges)return;movingCanvas={x:e.clientX,y:e.clientY,px:pan.x,py:pan.y};stage.classList.add('dragging');e.preventDefault()};window.onpointermove=e=>{if(movingCanvas){pan.x=movingCanvas.px+e.clientX-movingCanvas.x;pan.y=movingCanvas.py+e.clientY-movingCanvas.y;render()}};window.onpointerup=()=>{movingCanvas=null;stage.classList.remove('dragging')};
+stage.onwheel=e=>{e.preventDefault();const r=stage.getBoundingClientRect();zoomAt(e.deltaY<0?1.1:.9,e.clientX-r.left,e.clientY-r.top)};
  addNode.onclick=()=>{let n={id:uid('n'),name:'新人物',meta:'',intro:'',avatar:'',x:(stage.clientWidth/2-pan.x)/scale/WORLD_WIDTH*100,y:(stage.clientHeight/2-pan.y)/scale/WORLD_HEIGHT*100};data.nodes.push(n);selected=n.id;save();render()};addEdge.onclick=()=>{edgeMode=true;edgeStart=null;alert('请依次点击关系两端的人物节点')};document.getElementById('closeDrawer').onclick=hideDrawer;zoomIn.onclick=()=>zoomAt(1.2,stage.clientWidth/2,stage.clientHeight/2);zoomOut.onclick=()=>zoomAt(1/1.2,stage.clientWidth/2,stage.clientHeight/2);zoomFit.onclick=()=>{scale=1;pan={x:0,y:0};render()};clearBtn.onclick=()=>{if(confirm('清空全部人物和关系？')){data={nodes:[],edges:[]};selected=null;save();render()}};
 exportHtml.onclick=()=>{let blob=new Blob(['<!doctype html>\n'+document.documentElement.outerHTML],{type:'text/html;charset=utf-8'});download(blob,'人物关系图谱.html')};exportPng.onclick=async()=>{let svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${stage.clientWidth}" height="${stage.clientHeight}"><rect width="100%" height="100%" fill="#0b1020"/>${edges.innerHTML}</svg>`;let b=new Blob([svg],{type:'image/svg+xml'});download(b,'人物关系图谱.svg')};function download(b,n){let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}function attr(v){return esc(v).replace(/`/g,'&#96;')}
