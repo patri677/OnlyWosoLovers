@@ -13,7 +13,7 @@
   
   Woso于我而言是一个现实世界的乌托邦，这里没有恶意挑衅与对立，只有无尽的欢乐与美好，而我相信你们也是如此感受。何其有幸我能够找到这样一个乌托邦，也何其有幸有你们和我一起分享这份欢乐美好。感谢你们的爱与支持，谢谢!
   
-  *This is WOSO，but it's more than WOSO.*
+  **This is WOSO，but it's more than WOSO.**
   
   这是我的小红书链接https://www.xiaohongshu.com/user/profile/603a3189000000000101e420 ，欢迎关注我的账号或者与我聊天（也可以提一些改进建议），很高兴认识你们！
 
