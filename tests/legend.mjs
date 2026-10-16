@@ -45,3 +45,17 @@ panelContext.setSideOpen(false);panelContext.renderEditor();assert(collapsed,'Ex
 panelContext.selected='b';panelContext.renderEditor();assert(collapsed,'Selecting another person returns to viewing mode');
 panelContext.data.nodes=[];panelContext.renderEditor();assert(collapsed,'Deleting the selected person hides the editor');
 console.log('Editor panel: selection, close, removal, and stable resize checks passed.');
+let editButton,profileOpen=false;
+panelContext.data.nodes=[{id:'a'}];panelContext.selected='a';panelContext.renderEditor();
+panelContext.openDrawer=()=>{profileOpen=true};
+panelContext.document={createElement:()=>({}),getElementById:id=>id==='profile'?{appendChild:button=>{editButton=button}}:{classList:{remove:()=>{profileOpen=false}}}};
+vm.runInContext(layout.slice(layout.indexOf('const openDrawerBeforeEditButton='),layout.indexOf('// 侧栏、窗口')),panelContext);
+for(const device of ['desktop','mobile']){
+ panelContext.setSideOpen(true);
+ panelContext.openDrawer({id:'a'});
+ assert(collapsed&&panelContext.sidePanel.hidden,device+': even the same selected person opens only the profile');
+ assert(profileOpen);assert.equal(editButton.textContent,'编辑');
+ editButton.onclick();assert(!collapsed&&!panelContext.sidePanel.hidden,device+': only the edit button reveals the editor');
+ assert(!profileOpen,'Profile closes before editing');
+}
+console.log('Profile/edit transition: repeated selection and explicit edit button passed.');

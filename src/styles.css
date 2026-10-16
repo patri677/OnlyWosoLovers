@@ -26,6 +26,7 @@
 .legend-all{flex:none;height:26px;padding:3px 7px;font-size:11px;border-radius:12px;background:#10182bc9;border-color:transparent}
 .legend-all[aria-pressed='true']{border-color:#70a7ff}
 #sideToggle:disabled{opacity:.45;cursor:default}
+.side[hidden]{display:none!important}
 .profile-edit{display:block;width:100%;min-height:44px;margin-top:16px}
 @media(max-width:900px){.relation-palette{right:6px;max-width:calc(100% - 12px)}.relation-palette .legend{grid-template-rows:repeat(2,32px)}.legend-filter{height:32px;padding:4px 8px;font-size:12px}.legend-all{min-height:32px}}
 .graph-loading .stage-wrap::after{content:'正在读取图谱…';position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);pointer-events:none}

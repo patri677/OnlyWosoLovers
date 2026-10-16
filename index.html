@@ -32,6 +32,7 @@
 .legend-all{flex:none;height:26px;padding:3px 7px;font-size:11px;border-radius:12px;background:#10182bc9;border-color:transparent}
 .legend-all[aria-pressed='true']{border-color:#70a7ff}
 #sideToggle:disabled{opacity:.45;cursor:default}
+.side[hidden]{display:none!important}
 .profile-edit{display:block;width:100%;min-height:44px;margin-top:16px}
 @media(max-width:900px){.relation-palette{right:6px;max-width:calc(100% - 12px)}.relation-palette .legend{grid-template-rows:repeat(2,32px)}.legend-filter{height:32px;padding:4px 8px;font-size:12px}.legend-all{min-height:32px}}
 .graph-loading .stage-wrap::after{content:'正在读取图谱…';position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);pointer-events:none}
@@ -521,7 +522,7 @@ let sideClose=sideHeader.querySelector('#sideClose');
 if(!sideClose){sideClose=document.createElement('button');sideClose.id='sideClose';sideClose.className='btn side-close';sideClose.type='button';sideClose.setAttribute('aria-label','关闭编辑面板');sideClose.textContent='×';sideHeader.appendChild(sideClose)}
 let sideToggle=document.getElementById('sideToggle');
 if(!sideToggle){sideToggle=document.createElement('button');sideToggle.id='sideToggle';sideToggle.className='btn';sideToggle.type='button';sideToggle.textContent='编辑面板';document.querySelector('.top').insertBefore(sideToggle,document.getElementById('clearBtn'))}
-function setSideOpen(open){open=!!open&&data.nodes.some(node=>node.id===selected);const changed=mainPanel.classList.contains('side-collapsed')===open;mainPanel.classList.toggle('side-collapsed',!open);sideToggle.setAttribute('aria-expanded',String(open));sidePanel.setAttribute('aria-hidden',String(!open));if(changed)scheduleCanvasGeometryUpdate()}
+function setSideOpen(open){open=!!open&&data.nodes.some(node=>node.id===selected);const changed=mainPanel.classList.contains('side-collapsed')===open;mainPanel.classList.toggle('side-collapsed',!open);sideToggle.setAttribute('aria-expanded',String(open));sidePanel.setAttribute('aria-hidden',String(!open));sidePanel.hidden=!open;if(changed)scheduleCanvasGeometryUpdate()}
 const renderEditorBeforeAutoPanel=renderEditor;
 let editorPanelSelection=null;
 renderEditor=()=>{
@@ -534,7 +535,8 @@ renderEditor=()=>{
 const openDrawerBeforeEditButton=openDrawer;
 openDrawer=n=>{
   openDrawerBeforeEditButton(n);
-  if(n.id!==editorPanelSelection)setSideOpen(false);
+  // Viewing always exits editing, including tapping the same person again.
+  setSideOpen(false);
   const button=document.createElement('button');button.type='button';button.className='btn primary profile-edit';button.textContent='编辑';
   button.onclick=()=>{selected=n.id;renderEditor();document.getElementById('drawer').classList.remove('open');setSideOpen(true)};
   document.getElementById('profile').appendChild(button);
