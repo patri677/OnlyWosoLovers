@@ -2,7 +2,7 @@
 
 一个可浏览、筛选、编辑和导出的 WOSO 人物关系图谱，支持电脑、手机与离线使用。采用纯静态网站，不设应用后端或数据库。
 
-**[进入网站 → OnlyWosoLovers](https://patri677.github.io/OnlyWosoLovers/)**
+**项目完整网址：[https://patri677.github.io/OnlyWosoLovers/](https://patri677.github.io/OnlyWosoLovers/)**
 
 ## 致亲爱的访客朋友们
   亲爱的用户朋友们，大家好！
