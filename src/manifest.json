@@ -1,0 +1,16 @@
+{
+  "localStorageKey": "relationship-map-snapshot-1791980401154-i4jmb2ucq3",
+  "scripts": [
+    "graph-domain.ts",
+    "core.js",
+    "avatars.js",
+    "relation-options.js",
+    "view-state.js",
+    "data-transfer.js",
+    "view-export-layout.js",
+    "contributions.js",
+    "filters.js",
+    "responsive.js",
+    "bootstrap.js"
+  ]
+}

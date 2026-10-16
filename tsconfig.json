@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "None",
+    "lib": ["ES2020"],
+    "strict": true,
+    "noEmit": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  "files": ["src/graph-domain.ts"]
+}

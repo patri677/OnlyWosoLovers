@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>人物关系图谱</title>
+<!-- APP_STYLES -->
+<!-- GRAPH_DATA --></head>
+<body>
+<div class="app"><header class="top"><div><h1>人物关系图谱</h1><div class="sub">拖拽人物 · 点击查看介绍 · 自由编辑关系</div></div><div class="spacer"></div><button class="btn" id="clearBtn">清空</button><button class="btn" id="exportJson">导出数据</button><button class="btn" id="importJson">导入数据</button><input type="file" id="importJsonFile" accept=".json,application/json" hidden=""><button class="btn" id="exportHtml">保存为 HTML</button><button class="btn primary" id="exportPng">保存为图片</button></header>
+<main class="main"><section class="stage-wrap"><div class="toolbar"><button class="btn primary" id="addNode">＋ 添加人物</button><button class="btn" id="addEdge">↗ 添加关系</button></div><div class="stage" id="stage"><svg id="edges" aria-label="关系连线" viewBox="0 0 1196 761" style="visibility: visible;"></svg><div id="nodes"></div><div class="zoom"><button class="btn" id="zoomOut">−</button><button class="btn" id="zoomFit">适应画布</button><button class="btn" id="zoomIn">＋</button></div><div class="hint">滚轮缩放画布 · 拖动空白处平移</div></div><aside class="drawer" id="drawer"><button class="btn close" id="closeDrawer">关闭</button><div id="profile"></div></aside></section>
+<aside class="side"><h2>编辑面板</h2><div id="editor"><div class="empty">点击“添加人物”开始，或点击画布中的人物编辑</div></div><div class="section"><h2>关系图例</h2><div class="legend" id="legend"><div class="tag"><i class="dot" style="background:#fb7185"></i>前任</div><div class="tag"><i class="dot" style="background:#f472b6"></i>现任</div><div class="tag"><i class="dot" style="background:#f97316"></i>现任（已婚）</div><div class="tag"><i class="dot" style="background:#60a5fa"></i>国家队队友</div><div class="tag"><i class="dot" style="background:#34d399"></i>俱乐部队友</div><div class="tag"><i class="dot" style="background:#2dd4bf"></i>前俱乐部队友</div><div class="tag"><i class="dot" style="background:#fbbf24"></i>好友</div><div class="tag"><i class="dot" style="background:#c084fc"></i>家人</div><div class="tag"><i class="dot" style="background:#94a3b8"></i>其他</div></div></div><div class="section"><h2>快捷说明</h2><div class="sub">添加人物后可拖动节点。添加关系时依次点击两个节点，再在右侧选择关系类型。所有改动会自动保存在当前浏览器。</div></div></aside></main></div>
+<!-- APP_SCRIPTS -->
+
+
+
+
+</body></html>

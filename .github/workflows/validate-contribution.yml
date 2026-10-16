@@ -17,5 +17,9 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 22
+      - name: Install locked development dependencies
+        run: npm ci
       - name: Validate and build the proposed graph
         run: node build.mjs
+      - name: Check standalone output and responsive behavior
+        run: npm test

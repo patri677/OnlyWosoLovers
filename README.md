@@ -14,7 +14,15 @@
 2. 点击页面顶部的“导入数据”，选择 `人物关系图谱-爱心图.json`。这份文件是目前的爱心排布版本，包含 60 个人物和 95 条关系。
 3. 编辑后请再次“导出数据”保存 JSON 备份。浏览器中的自动保存只属于当前浏览器，不会自动同步到其他设备。
 
-`index.html` 是程序页面；当前图谱数据以单独的 JSON 文件保存。不要只复制 HTML 后就以为最新排布也会跟着同步。若需要把当前数据嵌入单个 HTML，请先导入 JSON，再使用页面的“下载 HTML”或“保存这一版”功能。
+`index.html` 是构建生成的独立页面；当前正式图谱数据以单独的 JSON 文件保存。若需要把浏览器中的最新编辑嵌入单个 HTML，请使用页面的“保存为 HTML”功能；若要更新仓库正式数据，请另外导出 JSON。重新构建会从源码和正式 JSON 重新生成根目录的 `index.html`。
+
+## 手机与平板
+
+图谱使用固定坐标，屏幕尺寸变化时等比调整视图，保留手动排布。手机上可单指拖动空白处平移、双指缩放，或使用底部的缩放和“适应画布”按钮。拖动人物可调整位置。
+
+屏幕宽度不超过 900px 时，编辑面板默认折叠，展开后覆盖在画布右侧；工具栏换行并预留空间。筛选菜单会限制在可见屏幕内，顶部操作栏支持横向滚动。横竖屏切换会调整面板状态和画布尺寸。
+
+运行 `node tests/responsive.mjs` 可检查等比适配、菜单边界和手势逻辑。这些检查不能替代 iPhone Safari、Android Chrome 和平板的实机验证。
 
 ## 项目状态
 
@@ -22,7 +30,30 @@
 
 ## 本地构建
 
-需要 Node.js 22 或更高版本。运行 `node build.mjs`，会从 `人物关系图谱-爱心图.json` 校验并生成 `dist/index.html`。GitHub Actions 在 `main` 更新后执行同一构建并发布至 GitHub Pages。
+需要 Node.js 22 或更高版本。首次开发或更新依赖后运行 `npm ci` 安装锁定的开发依赖。运行 `npm run build`（或 `node build.mjs`），会从 `src` 和 `人物关系图谱-爱心图.json` 校验并生成根目录的 `index.html` 与 `dist/index.html`。根目录页面保留原有本地存储标识，部署页面按正式数据版本生成标识。GitHub Actions 在 `main` 更新后安装锁定依赖，执行同一构建、检查并发布至 GitHub Pages。
+
+运行 `npm run check` 可进行类型检查、构建并执行现有回归检查。`npm run typecheck` 单独检查 TypeScript；`npm test` 检查当前已经生成的页面。构建成品包含全部脚本、样式和图谱数据，可双击打开，不依赖开发服务器，也不需要安装 Node.js 或 TypeScript。
+
+## 修改源码
+
+请修改 `src`，不要直接修改自动生成的 `index.html` 或 `dist/index.html`。修改后运行 `npm run check`，再打开生成页面。
+
+| 文件 | 用途 |
+| --- | --- |
+| `src/index.template.html`、`src/styles.css` | 页面结构、基础样式 |
+| `src/graph-domain.ts` | 人物/关系/筛选类型、共享数据校验、关系分类和组合匹配规则 |
+| `src/core.js`、`src/avatars.js` | 图谱基础操作、存储、人物及头像编辑 |
+| `src/data-transfer.js` | JSON 导入导出 |
+| `src/view-export-layout.js` | 人物聚焦、HTML/图片导出、面板与关系标签 |
+| `src/filters.js`、`src/view-state.js` | 筛选条件、关系分类和显示状态 |
+| `src/responsive.js` | 固定画布坐标下的适配、手势、菜单定位 |
+| `src/manifest.json`、`src/bootstrap.js` | 功能加载顺序、统一启动 |
+
+核心数据与筛选规则已迁移到严格检查的 TypeScript，界面和交互部分目前仍使用 JavaScript，共享页面状态，尚未迁移 React。`src/manifest.json` 同时声明 `.ts` 和 `.js` 的加载顺序；构建会先进行类型检查，再把 TypeScript 编译为普通 JavaScript 内嵌到 HTML。任何未纳入 `tsconfig.json` 的 TypeScript 入口都会阻止构建，避免漏检。
+
+`graph-domain.ts` 以 `WosoGraph` 命名空间提供不依赖界面的规则；浏览器 JSON 导入和发布前的数据检查使用同一份规则。具体关系分类保留“已婚”“订婚”“现任？”“前任？”类别，同时支持大类筛选。旧版数组格式的关系筛选仍能恢复。页面会在全部功能加载后才首次绘图，避免初始化时引用尚未定义的函数。
+
+回归检查覆盖单文件输出、正式数据与坐标完整性、JSON 往返与异常输入、关系分类、组合筛选和节点高亮，以及移动端适配计算和手势逻辑。界面布局和触屏手感仍需实机验证。
 
 首次启用 Pages 时，在仓库 **Settings → Pages → Build and deployment → Source** 中选择 **GitHub Actions**。
 
