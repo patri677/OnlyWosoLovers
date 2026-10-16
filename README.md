@@ -29,6 +29,8 @@
 - [贡献指南](CONTRIBUTING.md)：资料建议、Issue、Fork 与 Pull Request。
 - [开发说明](docs/DEVELOPMENT.md)：本地构建、源码结构与自动检查。
 - [部署与更新](docs/DEPLOYMENT.md)：GitHub Pages、发布流程与旧版本排查。
-- [项目计划](项目计划.md)：当前进度、后续方向与验收安排。
+- [项目计划](docs/项目计划.md)：当前进度、后续方向与验收安排。
+- [目录结构](docs/STRUCTURE.md)：数据、源码、测试和构建文件的位置。
+- [发布验收](docs/RELEASE-AUDIT.md)：测试结果、已知问题及放行条件。
 
 请尊重人物隐私、核实资料来源，并确认头像的使用依据。

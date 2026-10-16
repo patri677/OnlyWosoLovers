@@ -32,7 +32,7 @@ jobs:
       - name: Build site with the latest graph data
         run: node build.mjs
       - name: Check standalone output and responsive behavior
-        run: npm test
+        run: npm test && node tests/release.mjs
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload site artifact

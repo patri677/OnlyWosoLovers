@@ -22,4 +22,4 @@ jobs:
       - name: Validate and build the proposed graph
         run: node build.mjs
       - name: Check standalone output and responsive behavior
-        run: npm test
+        run: npm test && node tests/release.mjs

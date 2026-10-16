@@ -99,6 +99,7 @@ namespace WosoGraph {
         if (value[field] != null && typeof value[field] !== 'string') throw Error(`第 ${i + 1} 个人物的 ${field} 字段无效`);
       }
       const avatar = typeof value.avatar === 'string' ? value.avatar : '';
+      if (/[\u0000-\u0020\u007f"'<>`]/.test(avatar)) throw Error(`第 ${i + 1} 个人物的头像地址包含不安全字符`);
       if (avatar && !/^https?:\/\//i.test(avatar) && !/^data:image\/(?:png|jpeg|webp|gif);base64,/i.test(avatar)) throw Error(`第 ${i + 1} 个人物的头像格式不支持`);
       ids.add(value.id);
       const person: Person = {

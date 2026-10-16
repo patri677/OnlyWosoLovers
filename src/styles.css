@@ -28,6 +28,8 @@
 #sideToggle:disabled{opacity:.45;cursor:default}
 .side[hidden]{display:none!important}
 .profile-edit{display:block;width:100%;min-height:44px;margin-top:16px}
+.author-watermark{position:absolute;right:max(16px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));z-index:2;color:#dce6ff;opacity:.6;font-size:12px;line-height:1.5;letter-spacing:.3px;text-shadow:0 1px 3px #0008;pointer-events:none;user-select:none}
+.stage .hint{bottom:40px}
 @media(max-width:900px){.relation-palette{right:6px;max-width:calc(100% - 12px)}.relation-palette .legend{grid-template-rows:repeat(2,32px)}.legend-filter{height:32px;padding:4px 8px;font-size:12px}.legend-all{min-height:32px}}
 .graph-loading .stage-wrap::after{content:'正在读取图谱…';position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);pointer-events:none}
 .side-header{display:flex;align-items:center;justify-content:space-between;gap:12px}.side-header h2{margin:0}.side-close{font-size:20px;line-height:1;padding:5px 10px}

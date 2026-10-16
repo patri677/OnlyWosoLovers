@@ -74,6 +74,21 @@ function loadImageForExport(url){return new Promise(resolve=>{
   if(/^https?:/i.test(url))im.crossOrigin='anonymous';
   im.onload=()=>finish(im);im.onerror=()=>finish(null);im.src=url;
 })}
+function authorWatermarkLayout(width,height){
+  const shortSide=Math.min(width,height);
+  const fontSize=2*Math.max(18,Math.round(shortSide*.018));
+  const padding=Math.max(12,Math.round(shortSide*.012));
+  return {fontSize,padding};
+}
+function drawAuthorWatermark(ctx,width,height,bottom){
+  const {fontSize,padding}=authorWatermarkLayout(width,height);
+  ctx.save();ctx.setTransform(1,0,0,1,0,0);
+  ctx.globalAlpha=.7;ctx.fillStyle='#dce6ff';ctx.textAlign='right';ctx.textBaseline='bottom';
+  ctx.font=`600 ${fontSize}px "Microsoft YaHei", system-ui, sans-serif`;
+  ctx.shadowColor='#0008';ctx.shadowBlur=2;
+  ctx.fillText('patri677原创',width-padding,bottom??height-padding);
+  ctx.restore();
+}
 exportPng.onclick=async()=>{
   const shownEdges=viewEdges(),shownNodes=data.nodes.filter(n=>viewNodeIds().has(n.id));
   if(!shownNodes.length){alert('当前视图没有可导出的人物');return}
@@ -81,11 +96,13 @@ exportPng.onclick=async()=>{
   const left=Math.min(...points.map(p=>p.x))-100,top=Math.min(...points.map(p=>p.y))-70;
   const w=Math.ceil(Math.max(...points.map(p=>p.x))+100-left);
   const h=Math.ceil(Math.max(...points.map(p=>p.y))+105-top);
-  const ratio=Math.min(2,12000/w,12000/h,Math.sqrt(48000000/(w*h)));
+  // Preserve the export size limit without adding a separate watermark footer.
+  const ratio=Math.min(2,11000/w,11000/h,Math.sqrt(40000000/(w*h)));
   if(ratio<.25){alert('关系图范围过大，无法一次导出图片。请先筛选部分关系再导出。');return}
-  const c=document.createElement('canvas');c.width=Math.ceil(w*ratio);c.height=Math.ceil(h*ratio);
+  const c=document.createElement('canvas');c.width=Math.ceil(w*ratio);
+  c.height=Math.ceil(h*ratio);
   const ctx=c.getContext('2d');if(!ctx){alert('无法创建图片画布');return}
-  ctx.scale(ratio,ratio);ctx.fillStyle='#0b1020';ctx.fillRect(0,0,w,h);
+  ctx.scale(ratio,ratio);ctx.fillStyle='#0b1020';ctx.fillRect(0,0,w,c.height/ratio);
   ctx.strokeStyle='#ffffff0a';ctx.lineWidth=1;
   for(let x=0;x<w;x+=32){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
   for(let y=0;y<h;y+=32){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
@@ -125,6 +142,9 @@ exportPng.onclick=async()=>{
     ctx.fillStyle='#e9eefb';ctx.textAlign='center';ctx.font='bold 14px Microsoft YaHei';ctx.fillText(n.name||'未命名',x,y+52,130);
     ctx.fillStyle='#91a0bf';ctx.font='11px Microsoft YaHei';ctx.fillText(n.meta||'',x,y+69,130);
   });
+  // Meta text is drawn at node y + 69; allow 4px for its visible lower edge.
+  const watermarkBottom=(Math.max(...points.map(p=>p.y))-top+73)*ratio;
+  drawAuthorWatermark(ctx,c.width,c.height,watermarkBottom);
   try{c.toBlob(blob=>{if(blob)download(blob,'人物关系图谱.png');else alert('图片导出失败')},'image/png')}catch(error){alert('图片导出失败：'+error.message)}
 };
 exportHtml.onclick=()=>{
@@ -144,6 +164,11 @@ exportHtml.onclick=()=>{
   download(new Blob(['<!doctype html>\n'+copy.outerHTML],{type:'text/html;charset=utf-8'}),'人物关系图谱-当前视图.html');
 };
 const mainPanel=document.querySelector('.main'),sidePanel=mainPanel.querySelector('.side');
+// Kept inside the app clone when saving HTML, outside the transformed graph.
+if(!document.getElementById('authorWatermark')){
+  const watermark=document.createElement('div');watermark.id='authorWatermark';watermark.className='author-watermark';watermark.textContent='patri677原创';
+  document.querySelector('.stage-wrap').appendChild(watermark);
+}
 // 缩放整个节点，而不只是改变节点坐标；否则缩小时头像和文字会堆叠。
 const unscaledRenderNodes=renderNodes;
 renderNodes=()=>{

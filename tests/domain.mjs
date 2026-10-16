@@ -55,6 +55,6 @@ assert(context.viewNodeIds().has('b'),'The connected non-Arsenal person remains 
 assert(context.shouldGlowPerson(a));assert(!context.shouldGlowPerson(b),'The connected non-Arsenal person does not glow');
 context.activeFilters=filters({clubs:['阿森纳'],countries:['西班牙']});
 assert.equal(context.viewNodeIds().size,0,'An empty combined filter has no visible data');
-const official=JSON.parse(read('人物关系图谱-爱心图.json'));
+const official=JSON.parse(read('data/人物关系图谱-爱心图.json'));
 assert.equal(domain.validateGraph(official).nodes.length,official.data.nodes.length);
 console.log('PASS: typed validation, JSON facets/coordinates, combined filter semantics, married/engaged/question categories, legacy filters and counterpart visibility/highlighting.');

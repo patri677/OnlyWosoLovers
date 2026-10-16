@@ -6,15 +6,17 @@
 
 本项目长期采用纯静态网站方案，不计划开发应用后端、云端数据库、站内注册登录或多人实时编辑。浏览和本地编辑不需要站内账号；向 GitHub 提交 Issue 或 PR 则使用 GitHub 账号。
 
-目前已完成本地编辑、文件备份、静态发布流程、按功能拆分源码，以及核心规则的 TypeScript 迁移。后续重点是手机/平板实机验收、约 100 个及更多节点的性能检查、资料质量和社区贡献维护。自动化逻辑检查已通过，但不代表所有设备均已实机验证。阶段目标、验收标准和运维安排见 [项目计划.md](../项目计划.md)。
+目前已完成本地编辑、文件备份、静态发布流程、按功能拆分源码，以及核心规则的 TypeScript 迁移。后续重点是手机/平板实机验收、约 100 个及更多节点的性能检查、资料质量和社区贡献维护。自动化逻辑检查已通过，但不代表所有设备均已实机验证。阶段目标、验收标准和运维安排见 [项目计划.md](项目计划.md)。
 
 ## 本地构建
 
-需要 Node.js 22 或更高版本。首次开发或更新依赖后运行 `npm ci` 安装锁定的开发依赖。运行 `npm run build`（或 `node build.mjs`），会从 `src` 和 `人物关系图谱-爱心图.json` 校验并生成根目录的 `index.html` 与 `dist/index.html`。根目录页面保留原有本地存储标识，部署页面按正式数据版本生成标识。GitHub Actions 在 `main` 更新后安装锁定依赖，执行同一构建、检查并发布至 GitHub Pages。
+需要 Node.js 22 或更高版本。首次开发或更新依赖后运行 `npm ci` 安装锁定的开发依赖。运行 `npm run build`（或 `node build.mjs`），会从 `src` 和 `data/人物关系图谱-爱心图.json` 校验并生成根目录的 `index.html` 与 `dist/index.html`。根目录页面保留原有本地存储标识，部署页面按正式数据版本生成标识。GitHub Actions 在 `main` 更新后安装锁定依赖，执行同一构建、检查并发布至 GitHub Pages。
 
 运行 `npm run check` 可进行类型检查、构建并执行现有回归检查。`npm run typecheck` 单独检查 TypeScript；`npm test` 检查当前已经生成的页面。构建成品包含全部脚本、样式和图谱数据，可双击打开，不依赖开发服务器，也不需要安装 Node.js 或 TypeScript。
 
 ## 修改源码
+
+发布前另运行 `npm run test:release`，在现有检查基础上执行 `tests/release.mjs` 的异常和安全边界专项。首次发现的 5 项问题已修复并回归通过，详见[发布验收](RELEASE-AUDIT.md)。普通 `npm run check` 通过不能代替该专项检查；Pages 与 PR 工作流也会执行该专项。
 
 请修改 `src`，不要直接修改自动生成的 `index.html` 或 `dist/index.html`。修改后运行 `npm run check`，再打开生成页面。
 

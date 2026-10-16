@@ -10,7 +10,8 @@
     "build": "node build.mjs",
     "test": "node tests/build.mjs && node tests/domain.mjs && node tests/responsive.mjs && node tests/startup.mjs && node tests/labels.mjs && node tests/legend.mjs",
     "typecheck": "tsc --noEmit",
-    "check": "npm run build && npm test"
+    "check": "npm run build && npm test",
+    "test:release": "npm run check && node tests/release.mjs"
   },
   "devDependencies": {
     "typescript": "5.9.3"

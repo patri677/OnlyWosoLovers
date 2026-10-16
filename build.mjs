@@ -13,7 +13,7 @@ const diagnostics=[...(config.error?[config.error]:[]),...parsed.errors,...ts.ge
 if(diagnostics.length)throw Error(ts.formatDiagnosticsWithColorAndContext(diagnostics,{getCanonicalFileName:name=>name,getCurrentDirectory:()=>projectRoot,getNewLine:()=> '\n'}));
 
 const sourceHtml = new URL('./src/index.template.html', import.meta.url);
-const graphFile = new URL('./人物关系图谱-爱心图.json', import.meta.url);
+const graphFile = new URL('./data/人物关系图谱-爱心图.json', import.meta.url);
 const outputDir = new URL('./dist/', import.meta.url);
 const outputHtml = new URL('./dist/index.html', import.meta.url);
 

@@ -28,13 +28,15 @@ assert.deepEqual(renders,[{id:'local-edit',scale:.25}],'The first displayed fram
 assert.deepEqual(events,['measure','fit','reveal']);
 // Real storage restoration must not schedule an early render behind bootstrap.
 let storedRequest;let storageRenders=0,storageSchedules=0;
-const stored={nodes:[{id:'restored'}],edges:[]};
+const stored={nodes:[{id:'restored',name:'Restored',x:10,y:20}],edges:[]};
 const storageContext=vm.createContext({
  KEY:'test',appReady:false,localEditsSinceOpen:false,data:{nodes:[],edges:[]},selected:'old',
  openStorageDb:()=>Promise.resolve({transaction:()=>({objectStore:()=>({get:()=>{storedRequest={result:stored};return storedRequest}})})}),
  render:()=>storageRenders++,scheduleCanvasGeometryUpdate:()=>storageSchedules++,
 });
 const core=read('src/core.js');
+vm.runInContext(html.match(/<script data-source="graph-domain.ts">\n([\s\S]*?)\n<\/script>/)[1],storageContext);
+storageContext.types={};
 vm.runInContext(core.slice(core.indexOf('function restoreFromStorage()'),core.indexOf('function uid(')),storageContext);
 for(const ready of [false,true]){
  storageContext.appReady=ready;

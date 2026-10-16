@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const manifest=JSON.parse(read('src/manifest.json'));
-const graph=JSON.parse(read('人物关系图谱-爱心图.json')).data;
+const graph=JSON.parse(read('data/人物关系图谱-爱心图.json')).data;
 const snapshot=html=>{
   const match=html.match(/<script\b(?=[^>]*id="snapshot-data")([^>]*)>([\s\S]*?)<\/script>/);
   assert(match,'Standalone page must contain graph data');

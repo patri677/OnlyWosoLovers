@@ -20,7 +20,7 @@
 适合愿意直接编辑 JSON 的贡献者。无需申请主仓库写权限：请先 Fork 本仓库，在自己的副本中修改，再向本仓库的 `main` 分支创建 Pull Request。
 
 1. 登录 GitHub，打开[本仓库](https://github.com/patri677/OnlyWosoLovers)，点击 **Fork**，将副本创建到自己的账号。
-2. 在自己的 Fork 中打开 `人物关系图谱-爱心图.json`，点击编辑按钮，按现有格式修改人物或关系，再提交（Commit）到你自己的分支。
+2. 在自己的 Fork 中打开 `data/人物关系图谱-爱心图.json`，点击编辑按钮，按现有格式修改人物或关系，再提交（Commit）到你自己的分支。
 3. 返回自己的 Fork，选择 **Contribute → Open pull request**（或 **Compare & pull request**），目标仓库选 `patri677/OnlyWosoLovers`，目标分支选 `main`。
 4. 在 PR 描述中列出变更内容，并提供可核验的来源链接；等待管理员审核。管理员可以要求修改、拒绝或合并。
 
@@ -35,7 +35,7 @@
 3. `npm run check` 会做类型检查、构建及回归检查，生成根目录 `index.html` 与 `dist/index.html`；前者随源码更新，后者是生成目录，不需要提交。
 4. 在 PR 中说明用途、涉及的文件、验证结果和已知限制。移动端改动请记录实际测试的设备、浏览器和操作；未做实机测试时请明确说明。
 
-核心校验和筛选规则位于 `src/graph-domain.ts`，界面交互主要是 JavaScript；维护约定与阶段安排见 [README](README.md) 和 [项目计划](项目计划.md)。纯文档修改只需检查文案、链接及与实际功能是否一致，不要求为此重建页面。
+核心校验和筛选规则位于 `src/graph-domain.ts`，界面交互主要是 JavaScript；维护约定与阶段安排见 [README](README.md) 和 [项目计划](docs/项目计划.md)。纯文档修改只需检查文案、链接及与实际功能是否一致，不要求为此重建页面。
 
 ## 审核与隐私
 

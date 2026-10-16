@@ -34,6 +34,8 @@
 #sideToggle:disabled{opacity:.45;cursor:default}
 .side[hidden]{display:none!important}
 .profile-edit{display:block;width:100%;min-height:44px;margin-top:16px}
+.author-watermark{position:absolute;right:max(16px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));z-index:2;color:#dce6ff;opacity:.6;font-size:12px;line-height:1.5;letter-spacing:.3px;text-shadow:0 1px 3px #0008;pointer-events:none;user-select:none}
+.stage .hint{bottom:40px}
 @media(max-width:900px){.relation-palette{right:6px;max-width:calc(100% - 12px)}.relation-palette .legend{grid-template-rows:repeat(2,32px)}.legend-filter{height:32px;padding:4px 8px;font-size:12px}.legend-all{min-height:32px}}
 .graph-loading .stage-wrap::after{content:'正在读取图谱…';position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);pointer-events:none}
 .side-header{display:flex;align-items:center;justify-content:space-between;gap:12px}.side-header h2{margin:0}.side-close{font-size:20px;line-height:1;padding:5px 10px}
@@ -164,6 +166,8 @@ var WosoGraph;
                     throw Error(`第 ${i + 1} 个人物的 ${field} 字段无效`);
             }
             const avatar = typeof value.avatar === 'string' ? value.avatar : '';
+            if (/[\u0000-\u0020\u007f"'<>`]/.test(avatar))
+                throw Error(`第 ${i + 1} 个人物的头像地址包含不安全字符`);
             if (avatar && !/^https?:\/\//i.test(avatar) && !/^data:image\/(?:png|jpeg|webp|gif);base64,/i.test(avatar))
                 throw Error(`第 ${i + 1} 个人物的头像格式不支持`);
             ids.add(value.id);
@@ -202,7 +206,7 @@ const colors={ex:'#ff5b5b',cur:'#22d3ee',married:'#fb923c',nt:'#60a5fa',club:'#4
 const sample={nodes:[{id:'a',name:'林夏',meta:'国家队',intro:'前锋，国家队核心球员。',avatar:'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200',x:28,y:38},{id:'b',name:'苏菲',meta:'星辰俱乐部',intro:'中场，擅长组织进攻。',avatar:'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=200',x:55,y:27},{id:'c',name:'艾米',meta:'海湾俱乐部',intro:'门将，反应敏捷。',avatar:'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',x:73,y:57},{id:'d',name:'诺拉',meta:'国家队',intro:'边锋，速度出色。',avatar:'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200',x:34,y:70}],edges:[{id:'e1',source:'a',target:'b',type:'friend',label:'好友'},{id:'e2',source:'a',target:'d',type:'nt',label:'国家队队友'},{id:'e3',source:'b',target:'c',type:'club',label:'俱乐部队友'}]};
 let data=load(), selected=null, edgeMode=false, edgeStart=null, scale=1, pan={x:0,y:0}, dragging=null;
 let appReady=false;
-function load(){try{const saved=localStorage.getItem(KEY);if(saved)return JSON.parse(saved)}catch(e){}try{const snapshot=document.getElementById('snapshot-data');if(snapshot)return JSON.parse(snapshot.textContent).data}catch(e){}return sample}
+function load(){try{const saved=localStorage.getItem(KEY);if(saved)return WosoGraph.validateGraph(JSON.parse(saved),types)}catch(e){console.warn('本地缓存不可用，尝试读取页面内嵌图谱。')}try{const snapshot=document.getElementById('snapshot-data');if(snapshot)return WosoGraph.validateGraph(JSON.parse(snapshot.textContent).data,types)}catch(e){console.warn('页面内嵌图谱不可用。')}return sample}
 let storageDbPromise=null,localEditsSinceOpen=false,storageWarningShown=false;
 function storageWarning(){if(!storageWarningShown){storageWarningShown=true;alert('浏览器未能保存图谱。请立即点击“导出数据”备份，避免刷新后丢失本次修改。')}}
 function openStorageDb(){
@@ -234,7 +238,7 @@ function restoreFromStorage(){
     request.onerror=()=>reject(request.error);
   })).then(stored=>{
     if(!stored||localEditsSinceOpen||!Array.isArray(stored.nodes)||!Array.isArray(stored.edges))return;
-    data=stored;selected=null;
+    data=WosoGraph.validateGraph(stored,types);selected=null;
     if(appReady){render();scheduleCanvasGeometryUpdate()}
   }).catch(()=>{});
 }
@@ -244,13 +248,13 @@ function render(){renderEdges();renderNodes();renderEditor();renderLegend()}
 // Resizing changes the camera, never the manually arranged graph geometry.
 const WORLD_WIDTH=1196,WORLD_HEIGHT=761;
 function pos(n){return {x:n.x/100*WORLD_WIDTH,y:n.y/100*WORLD_HEIGHT}}
-function renderNodes(){nodes.innerHTML='';data.nodes.forEach(n=>{let el=document.createElement('div');el.className='node'+(selected===n.id?' selected':'');let p=pos(n);el.style.left=p.x*scale+pan.x+'px';el.style.top=p.y*scale+pan.y+'px';el.dataset.id=n.id;el.innerHTML=`<img class="avatar" src="${n.avatar||'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22%3E%3Crect width=%2264%22 height=%2264%22 fill=%22%23263657%22/%3E%3Ctext x=%2232%22 y=%2238%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2228%22%3E人%3C/text%3E%3C/svg%3E'}"/><div class="node-name">${esc(n.name||'未命名')}</div><div class="node-meta">${esc(n.meta||'')}</div>`;el.onpointerdown=e=>startNode(e,n);el.onclick=e=>{if(!dragging){selected=n.id;if(edgeMode){if(!edgeStart)edgeStart=n.id;else if(edgeStart!==n.id){addRelation(edgeStart,n.id);edgeStart=null;edgeMode=false}}else openDrawer(n);render()}};nodes.appendChild(el)})}
+function renderNodes(){nodes.innerHTML='';data.nodes.forEach(n=>{let el=document.createElement('div');el.className='node'+(selected===n.id?' selected':'');let p=pos(n);el.style.left=p.x*scale+pan.x+'px';el.style.top=p.y*scale+pan.y+'px';el.dataset.id=n.id;el.innerHTML=`<img class="avatar" src="${attr(n.avatar||'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22%3E%3Crect width=%2264%22 height=%2264%22 fill=%22%23263657%22/%3E%3Ctext x=%2232%22 y=%2238%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2228%22%3E人%3C/text%3E%3C/svg%3E')}"/><div class="node-name">${esc(n.name||'未命名')}</div><div class="node-meta">${esc(n.meta||'')}</div>`;el.onpointerdown=e=>startNode(e,n);el.onclick=e=>{if(!dragging){selected=n.id;if(edgeMode){if(!edgeStart)edgeStart=n.id;else if(edgeStart!==n.id){addRelation(edgeStart,n.id);edgeStart=null;edgeMode=false}}else openDrawer(n);render()}};nodes.appendChild(el)})}
 function renderEdges(){let s=edges,w=stage.clientWidth,h=stage.clientHeight;s.setAttribute('viewBox',`0 0 ${w} ${h}`);s.innerHTML='';data.edges.forEach(e=>{let a=data.nodes.find(n=>n.id===e.source),b=data.nodes.find(n=>n.id===e.target);if(!a||!b)return;let A=pos(a),B=pos(b),x1=A.x*scale+pan.x,y1=A.y*scale+pan.y,x2=B.x*scale+pan.x,y2=B.y*scale+pan.y;let same=data.edges.filter(x=>(x.source===e.source&&x.target===e.target)||(x.source===e.target&&x.target===e.source));let label=same.map(x=>x.label||types[x.type]||'关系').filter((v,i,a)=>a.indexOf(v)===i).join('&');let g=document.createElementNS('http://www.w3.org/2000/svg','g');g.innerHTML=`<line class="edge" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${relationColor(e)}"/><text class="edge-label" x="${(x1+x2)/2}" y="${(y1+y2)/2-7}" text-anchor="middle">${esc(label)}</text>`;g.onclick=()=>showEdgeActions(e);s.appendChild(g)})}
 function showEdgeActions(e){let mask=document.createElement('div');mask.style='position:fixed;inset:0;background:#0008;z-index:18;display:grid;place-items:center';mask.innerHTML='<div style="background:#11182c;border:1px solid #344466;border-radius:12px;padding:18px;color:#e9eefb;width:min(92vw,360px)"><h2 style="margin:0 0 14px">关系操作</h2><div style="display:flex;flex-direction:column;gap:9px"><button class="btn primary" id="edgeEdit">编辑关系</button><button class="btn danger" id="edgeDelete">删除关系</button><button class="btn" id="edgeCancel">取消</button></div></div>';document.body.appendChild(mask);mask.querySelector('#edgeCancel').onclick=()=>mask.remove();mask.querySelector('#edgeDelete').onclick=()=>{data.edges=data.edges.filter(x=>x.id!==e.id);save();mask.remove();render()};mask.querySelector('#edgeEdit').onclick=()=>{mask.remove();editEdge(e)}}
 function editEdge(e){let mask=document.createElement('div');mask.style='position:fixed;inset:0;background:#000b;z-index:19;display:grid;place-items:center;padding:16px';let pair=data.edges.filter(x=>(x.source===e.source&&x.target===e.target)||(x.source===e.target&&x.target===e.source));mask.innerHTML='<div style="background:#11182c;border:1px solid #344466;border-radius:12px;padding:18px;color:#e9eefb;width:min(92vw,420px)"><h2 style="margin:0 0 8px">编辑关系</h2><div style="color:#91a0bf;font-size:12px;margin-bottom:10px">点击关系名称即可勾选或取消，右侧会显示勾选标记。</div><div id="editChoices" style="display:flex;flex-direction:column;gap:7px;max-height:300px;overflow:auto">'+Object.entries(types).map(([k,v])=>{let old=pair.find(x=>x.type===k);return '<label style="display:flex;align-items:center;gap:9px;padding:9px;border:1px solid #30405f;border-radius:7px;cursor:pointer"><input type="checkbox" value="'+k+'" '+(old?'checked':'')+'><span>'+v+'</span><span style="margin-left:auto;color:#70a7ff;font-size:18px">✓</span></label>'}).join('')+'</div><input id="editCustom" placeholder="其他关系名称" style="display:none;width:100%;margin-top:8px;background:#0c1427;color:#e9eefb;border:1px solid #30405f;border-radius:7px;padding:8px"><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px"><button class="btn" id="editCancel">取消</button><button class="btn primary" id="editOk">保存修改</button></div></div>';document.body.appendChild(mask);let choices=mask.querySelector('#editChoices'),custom=mask.querySelector('#editCustom');choices.querySelectorAll('input').forEach(c=>c.onchange=()=>{custom.style.display=choices.querySelector('input[value="other"]').checked?'block':'none'});custom.value=(pair.find(x=>x.type==='other')||{}).label||'';custom.style.display=choices.querySelector('input[value="other"]').checked?'block':'none';mask.querySelector('#editCancel').onclick=()=>mask.remove();mask.querySelector('#editOk').onclick=()=>{let chosen=[...choices.querySelectorAll('input:checked')].map(x=>x.value);if(!chosen.length){alert('请至少选择一种关系');return}if(chosen.includes('other')&&!custom.value.trim()){alert('请填写自定义关系');return}data.edges=data.edges.filter(x=>!pair.includes(x));chosen.forEach(t=>data.edges.push({id:uid('e'),source:e.source,target:e.target,type:t,label:t==='other'?custom.value.trim():types[t]}));save();mask.remove();render()}}
-function renderEditor(){let n=data.nodes.find(x=>x.id===selected);if(!n){editor.innerHTML='<div class="empty">点击“添加人物”开始，或点击画布中的人物编辑</div>';return}editor.innerHTML=`<div class="field"><label>姓名</label><input id="fName" value="${attr(n.name)}"></div><div class="field"><label>头像 URL（可选）</label><input id="fAvatar" value="${attr(n.avatar||'')}"></div><div class="field"><label>身份 / 俱乐部</label><input id="fMeta" value="${attr(n.meta||'')}"></div><div class="field"><label>人物简介</label><textarea id="fIntro">${esc(n.intro||'')}</textarea></div><div class="row"><button class="btn primary" id="saveNode">保存人物</button><button class="btn danger" id="deleteNode">删除人物</button></div><div class="section"><h2>相关关系</h2><div id="nodeRels"></div></div>`;editor.querySelector('#saveNode').onclick=()=>{n.name=editor.querySelector('#fName').value;n.avatar=editor.querySelector('#fAvatar').value;n.meta=editor.querySelector('#fMeta').value;n.intro=editor.querySelector('#fIntro').value;save();render();openDrawer(n)};editor.querySelector('#deleteNode').onclick=()=>{if(confirm('删除人物及其所有关系？')){data.nodes=data.nodes.filter(x=>x.id!==n.id);data.edges=data.edges.filter(e=>e.source!==n.id&&e.target!==n.id);selected=null;save();render();closeDrawer()}};let rels=data.edges.filter(e=>e.source===n.id||e.target===n.id);nodeRels.innerHTML=rels.length?rels.map(e=>{let other=data.nodes.find(x=>x.id===(e.source===n.id?e.target:e.source));return `<div class="rel" data-e="${e.id}"><b>${esc(other?.name||'未知')}</b> · <span style="color:${colors[e.type]}">${esc(e.label||types[e.type])}</span><br><small>点击删除关系</small></div>`}).join(''):'<div class="sub">暂无关系</div>';nodeRels.querySelectorAll('.rel').forEach(x=>x.onclick=()=>{data.edges=data.edges.filter(e=>e.id!==x.dataset.e);save();render()})}
+function renderEditor(){let n=data.nodes.find(x=>x.id===selected);if(!n){editor.innerHTML='<div class="empty">点击“添加人物”开始，或点击画布中的人物编辑</div>';return}editor.innerHTML=`<div class="field"><label>姓名</label><input id="fName" value="${attr(n.name)}"></div><div class="field"><label>头像 URL（可选）</label><input id="fAvatar" value="${attr(n.avatar||'')}"></div><div class="field"><label>身份 / 俱乐部</label><input id="fMeta" value="${attr(n.meta||'')}"></div><div class="field"><label>人物简介</label><textarea id="fIntro">${esc(n.intro||'')}</textarea></div><div class="row"><button class="btn primary" id="saveNode">保存人物</button><button class="btn danger" id="deleteNode">删除人物</button></div><div class="section"><h2>相关关系</h2><div id="nodeRels"></div></div>`;editor.querySelector('#saveNode').onclick=()=>{n.name=editor.querySelector('#fName').value;n.avatar=editor.querySelector('#fAvatar').value;n.meta=editor.querySelector('#fMeta').value;n.intro=editor.querySelector('#fIntro').value;save();render();openDrawer(n)};editor.querySelector('#deleteNode').onclick=()=>{if(confirm('删除人物及其所有关系？')){data.nodes=data.nodes.filter(x=>x.id!==n.id);data.edges=data.edges.filter(e=>e.source!==n.id&&e.target!==n.id);selected=null;save();render();closeDrawer()}};let rels=data.edges.filter(e=>e.source===n.id||e.target===n.id);nodeRels.innerHTML=rels.length?rels.map(e=>{let other=data.nodes.find(x=>x.id===(e.source===n.id?e.target:e.source));return `<div class="rel" data-e="${attr(e.id)}"><b>${esc(other?.name||'未知')}</b> · <span style="color:${colors[e.type]}">${esc(e.label||types[e.type])}</span><br><small>点击删除关系</small></div>`}).join(''):'<div class="sub">暂无关系</div>';nodeRels.querySelectorAll('.rel').forEach(x=>x.onclick=()=>{data.edges=data.edges.filter(e=>e.id!==x.dataset.e);save();render()})}
 function renderLegend(){legend.innerHTML=Object.keys(types).map(k=>`<div class="tag"><i class="dot" style="background:${colors[k]}"></i>${types[k]}</div>`).join('')}
-function openDrawer(n){drawer.classList.add('open');let rels=data.edges.filter(e=>e.source===n.id||e.target===n.id);profile.innerHTML=`<div class="profile"><img src="${n.avatar||''}" onerror="this.style.display='none'"><h2>${esc(n.name)}</h2><p>${esc(n.meta||'')}</p></div><p>${esc(n.intro||'暂无简介')}</p><div class="section"><h2>关系</h2>${rels.length?rels.map(e=>{let o=data.nodes.find(x=>x.id===(e.source===n.id?e.target:e.source));return `<div class="rel"><b>${esc(o?.name||'未知')}</b><br><span style="color:${colors[e.type]}">${esc(e.label||types[e.type])}</span></div>`}).join(''):'<div class="sub">暂无关系</div>'}</div>`}
+function openDrawer(n){drawer.classList.add('open');let rels=data.edges.filter(e=>e.source===n.id||e.target===n.id);profile.innerHTML=`<div class="profile"><img src="${attr(n.avatar||'')}" onerror="this.style.display='none'"><h2>${esc(n.name)}</h2><p>${esc(n.meta||'')}</p></div><p>${esc(n.intro||'暂无简介')}</p><div class="section"><h2>关系</h2>${rels.length?rels.map(e=>{let o=data.nodes.find(x=>x.id===(e.source===n.id?e.target:e.source));return `<div class="rel"><b>${esc(o?.name||'未知')}</b><br><span style="color:${colors[e.type]}">${esc(e.label||types[e.type])}</span></div>`}).join(''):'<div class="sub">暂无关系</div>'}</div>`}
 function hideDrawer(){document.getElementById('drawer').classList.remove('open');selected=null;render()}
 function addRelation(a,b){
   const mask=document.createElement('div');
@@ -334,10 +338,20 @@ importJsonFile.onchange=async()=>{
     const imported=validateImportedData(JSON.parse(await file.text()));
     if(!confirm(`将导入 ${imported.nodes.length} 个人物、${imported.edges.length} 条关系。\n这会覆盖当前浏览器里的图谱；如需保留，请先取消并导出数据。\n\n确定继续吗？`))return;
     const previous=data;
-    data=imported;selected=null;edgeMode=false;edgeStart=null;scale=1;pan={x:0,y:0};
-    if(!await save()){data=previous;throw Error('浏览器存储空间不足，请先导出当前数据备份')}
+    data=imported;
+    try{
+      if(!await save())throw Error('浏览器存储空间不足，请先导出当前数据备份');
+    }catch(error){data=previous;throw error}
+    // Commit UI changes only after persistence succeeds; failure preserves the view.
+    selected=null;edgeMode=false;edgeStart=null;scale=1;pan={x:0,y:0};
     document.getElementById('drawer').classList.remove('open');
     if(typeof activeFilters!=='undefined')activeFilters=null;
+    if(typeof draftFilterState!=='undefined')draftFilterState=cloneStructuredFilters(null);
+    if(typeof focusId!=='undefined')focusId=null;
+    if(typeof searchInput!=='undefined')searchInput.value='';
+    if(typeof searchResults!=='undefined')searchResults.hidden=true;
+    if(typeof cancelNodeDrag==='function')cancelNodeDrag();
+    if(typeof closeDropdownMenus==='function')closeDropdownMenus();
     render();zoomFit.click();
     alert(`导入完成：${imported.nodes.length} 个人物、${imported.edges.length} 条关系。`);
   }catch(error){alert(`导入失败，原有数据未被覆盖：${error.message||error}`)}
@@ -422,6 +436,21 @@ function loadImageForExport(url){return new Promise(resolve=>{
   if(/^https?:/i.test(url))im.crossOrigin='anonymous';
   im.onload=()=>finish(im);im.onerror=()=>finish(null);im.src=url;
 })}
+function authorWatermarkLayout(width,height){
+  const shortSide=Math.min(width,height);
+  const fontSize=2*Math.max(18,Math.round(shortSide*.018));
+  const padding=Math.max(12,Math.round(shortSide*.012));
+  return {fontSize,padding};
+}
+function drawAuthorWatermark(ctx,width,height,bottom){
+  const {fontSize,padding}=authorWatermarkLayout(width,height);
+  ctx.save();ctx.setTransform(1,0,0,1,0,0);
+  ctx.globalAlpha=.7;ctx.fillStyle='#dce6ff';ctx.textAlign='right';ctx.textBaseline='bottom';
+  ctx.font=`600 ${fontSize}px "Microsoft YaHei", system-ui, sans-serif`;
+  ctx.shadowColor='#0008';ctx.shadowBlur=2;
+  ctx.fillText('patri677原创',width-padding,bottom??height-padding);
+  ctx.restore();
+}
 exportPng.onclick=async()=>{
   const shownEdges=viewEdges(),shownNodes=data.nodes.filter(n=>viewNodeIds().has(n.id));
   if(!shownNodes.length){alert('当前视图没有可导出的人物');return}
@@ -429,11 +458,13 @@ exportPng.onclick=async()=>{
   const left=Math.min(...points.map(p=>p.x))-100,top=Math.min(...points.map(p=>p.y))-70;
   const w=Math.ceil(Math.max(...points.map(p=>p.x))+100-left);
   const h=Math.ceil(Math.max(...points.map(p=>p.y))+105-top);
-  const ratio=Math.min(2,12000/w,12000/h,Math.sqrt(48000000/(w*h)));
+  // Preserve the export size limit without adding a separate watermark footer.
+  const ratio=Math.min(2,11000/w,11000/h,Math.sqrt(40000000/(w*h)));
   if(ratio<.25){alert('关系图范围过大，无法一次导出图片。请先筛选部分关系再导出。');return}
-  const c=document.createElement('canvas');c.width=Math.ceil(w*ratio);c.height=Math.ceil(h*ratio);
+  const c=document.createElement('canvas');c.width=Math.ceil(w*ratio);
+  c.height=Math.ceil(h*ratio);
   const ctx=c.getContext('2d');if(!ctx){alert('无法创建图片画布');return}
-  ctx.scale(ratio,ratio);ctx.fillStyle='#0b1020';ctx.fillRect(0,0,w,h);
+  ctx.scale(ratio,ratio);ctx.fillStyle='#0b1020';ctx.fillRect(0,0,w,c.height/ratio);
   ctx.strokeStyle='#ffffff0a';ctx.lineWidth=1;
   for(let x=0;x<w;x+=32){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
   for(let y=0;y<h;y+=32){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
@@ -473,6 +504,9 @@ exportPng.onclick=async()=>{
     ctx.fillStyle='#e9eefb';ctx.textAlign='center';ctx.font='bold 14px Microsoft YaHei';ctx.fillText(n.name||'未命名',x,y+52,130);
     ctx.fillStyle='#91a0bf';ctx.font='11px Microsoft YaHei';ctx.fillText(n.meta||'',x,y+69,130);
   });
+  // Meta text is drawn at node y + 69; allow 4px for its visible lower edge.
+  const watermarkBottom=(Math.max(...points.map(p=>p.y))-top+73)*ratio;
+  drawAuthorWatermark(ctx,c.width,c.height,watermarkBottom);
   try{c.toBlob(blob=>{if(blob)download(blob,'人物关系图谱.png');else alert('图片导出失败')},'image/png')}catch(error){alert('图片导出失败：'+error.message)}
 };
 exportHtml.onclick=()=>{
@@ -492,6 +526,11 @@ exportHtml.onclick=()=>{
   download(new Blob(['<!doctype html>\n'+copy.outerHTML],{type:'text/html;charset=utf-8'}),'人物关系图谱-当前视图.html');
 };
 const mainPanel=document.querySelector('.main'),sidePanel=mainPanel.querySelector('.side');
+// Kept inside the app clone when saving HTML, outside the transformed graph.
+if(!document.getElementById('authorWatermark')){
+  const watermark=document.createElement('div');watermark.id='authorWatermark';watermark.className='author-watermark';watermark.textContent='patri677原创';
+  document.querySelector('.stage-wrap').appendChild(watermark);
+}
 // 缩放整个节点，而不只是改变节点坐标；否则缩小时头像和文字会堆叠。
 const unscaledRenderNodes=renderNodes;
 renderNodes=()=>{
